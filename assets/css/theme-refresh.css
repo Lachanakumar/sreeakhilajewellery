@@ -1,0 +1,1229 @@
+/* =========================================================================
+   Anand Jewellers - editorial storefront refresh
+   Additive layer loaded AFTER style.css. Reworks palette, type, spacing and
+   component styling into a calm, premium jewellery-house look. No changes to
+   the theme's grid/structure - overrides only.
+   ========================================================================= */
+
+:root {
+    --primary-color: #b0863b;      /* warm gold */
+    --primary-deep: #8f6c2c;
+    --secondary-color: #1c1a16;    /* ink */
+    --ink-800: #2a2621;
+    --ink-600: #5b544a;
+    --text-gray-color: #6f665a;
+    --ofwhite-color: #efe9dd;
+    --ivory: #f7f3ec;
+    --ivory-2: #efe8da;
+    --border-color: #e6ddcc;
+    --border-color2: #e6ddcc;
+    --border-color3: #ded3bf;
+    --bg-gray-color: #f7f3ec;
+    --gray-color: #f7f3ec;
+    --gray-color2: #f0e9dc;
+
+    --font-serif: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+    --shadow-sm: 0 1px 3px rgba(28, 26, 22, .05);
+    --shadow-md: 0 24px 60px -20px rgba(28, 26, 22, .22);
+    --radius: 2px;
+    --ease: cubic-bezier(.22, .61, .36, 1);
+
+    /* Section-heading ornament: tapered rule ending in a diamond. Used as an alpha
+       MASK, not an image, so the colour comes from --primary-color and tracks the
+       admin theme (includes/theme.php overrides that var at runtime). */
+    --heading-rule: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='12'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' x2='1' y1='0' y2='0'%3E%3Cstop offset='0' stop-color='%23000' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23000' stop-opacity='.85'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='0' y='5.5' width='97' height='1' fill='url(%23a)'/%3E%3Cpath d='M110 1.4 115 6 110 10.6 105 6Z' fill='%23000'/%3E%3C/svg%3E");
+}
+
+body {
+    color: var(--ink-800);
+    background: #fdfcfa;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+.main__content_wrapper { background: #fdfcfa; }
+
+/* ---------- Rhythm / whitespace ----------
+   One scale drives every section's vertical padding, so density is tuned here
+   rather than per-component. */
+:root { --section-y: 5.5rem; --gap-card: 3rem; }
+@media (min-width: 992px) { :root { --section-y: 6.5rem; } }
+@media (max-width: 767px) { :root { --section-y: 3.6rem; --gap-card: 2.4rem; } }
+
+.section--padding { padding-top: var(--section-y); padding-bottom: var(--section-y); }
+.section--padding.pt-0 { padding-top: 0; }
+.mb--n30 { margin-bottom: calc(var(--gap-card) * -1); }
+.product__section--inner .col.mb-30, .row.mb--n30 > .col.mb-30 { margin-bottom: var(--gap-card); }
+.container, .container-fluid { --bs-gutter-x: 2.4rem; }
+
+/* Cap the theme's oversized heading gaps to one consistent step */
+.section__heading.mb-35, .section__heading.mb-50, .section__heading.mb-60 { margin-bottom: 3.2rem; }
+@media (max-width: 767px) { .section__heading.mb-35, .section__heading.mb-50, .section__heading.mb-60 { margin-bottom: 2.4rem; } }
+
+/* ---------- Typography ---------- */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: .3px;
+    color: var(--secondary-color);
+    line-height: 1.18;
+}
+p { color: var(--ink-600); }
+.main__content_wrapper p { font-size: 1.58rem; line-height: 2.9rem; }
+
+a { transition: color .25s var(--ease); }
+a:hover { color: var(--primary-color); }
+
+/* Section headings -> centered editorial title flanked by a tapered gold rule
+   that terminates in a small diamond. The ornament is one SVG data-URI (rule +
+   diamond can't be a single CSS box); ::after mirrors it with scaleX(-1), so
+   the gold is declared once in --heading-rule. */
+.section__heading { position: relative; }
+.section__heading--maintitle {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 3.4rem;
+    letter-spacing: .5px;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+@media (min-width: 992px) { .section__heading--maintitle { font-size: 4rem; } }
+/* kill the base theme's own underline pseudo-elements */
+.section__heading--maintitle::before,
+.section__heading--maintitle::after { display: none; }
+
+.section__heading.text-center::before,
+.section__heading.text-center::after { content: none; }
+
+.section__heading.text-center .section__heading--maintitle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: clamp(1.4rem, 2.6vw, 2.8rem);
+    max-width: 100%;
+}
+.section__heading.text-center .section__heading--maintitle::before,
+.section__heading.text-center .section__heading--maintitle::after {
+    content: "";
+    display: block;
+    /* style.css absolutely-positions ::before for its own underline shape - undo it */
+    position: static;
+    inset: auto;
+    transform: none;
+    flex: 0 1 auto;
+    width: clamp(34px, 9vw, 118px);
+    height: 12px;
+    background: var(--primary-color);
+    -webkit-mask: var(--heading-rule) right center / 100% 12px no-repeat;
+    mask: var(--heading-rule) right center / 100% 12px no-repeat;
+}
+.section__heading.text-center .section__heading--maintitle::after { transform: scaleX(-1); }
+
+/* Eyebrow above the title: <span class="section__heading--eyebrow"> */
+.section__heading--eyebrow {
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: var(--primary-deep);
+    margin-bottom: 1.4rem;
+}
+.section__heading--desc {
+    max-width: 62ch;
+    margin: 1.8rem auto 0;
+    color: var(--ink-600);
+}
+/* Phones: the flanking rules can't shrink past the title's own width without
+   forcing horizontal overflow, so drop them and put one short rule underneath. */
+@media (max-width: 767px) {
+    .section__heading--maintitle { font-size: 2.6rem; }
+    .section__heading.text-center .section__heading--maintitle { display: block; }
+    .section__heading.text-center .section__heading--maintitle::before,
+    .section__heading.text-center .section__heading--maintitle::after { display: none; }
+    .section__heading.text-center::after {
+        content: "";
+        display: block;
+        width: 42px; height: 1px;
+        background: var(--primary-color);
+        margin: 1.2rem auto 0;
+    }
+    .section__heading--desc { font-size: 1.45rem !important; line-height: 2.5rem; margin-top: 1.2rem; }
+}
+
+/* overline micro-labels */
+.product__items--content__subtitle,
+.slider__content--desc.desc1,
+.scheme__card--cat,
+.banner__items--content__link.style2,
+.ad-strip__label, .ad-card__label {
+    text-transform: uppercase;
+    letter-spacing: 2.4px;
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: var(--primary-deep);
+}
+
+/* ---------- Header (nav specifics live in header.php inline <style>) ---------- */
+.header__topbar.bg__secondary { background: var(--secondary-color) !important; }
+.main__header.header__sticky {
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: none;
+    background: #fdfcfa;
+}
+.main__header--inner { padding-top: .9rem; padding-bottom: .9rem; }
+/* The configured logo is a wide ~6:1 lockup, so height is what reads as "size".
+   On phones cap the width too — the logo shares its row with the burger and the
+   cart, and a tall logo would otherwise push the cart off the edge. */
+.main__logo--img { max-height: 76px; width: auto; }
+@media (max-width: 991px) { .main__logo--img { max-height: 62px; max-width: 54vw; } }
+@media (max-width: 575px)  { .main__logo--img { max-height: 56px; max-width: 52vw; } }
+/* the offcanvas drawer carries width/height attributes on the <img>; override
+   both so the drawer logo grows with the header one instead of staying 158x36 */
+.offcanvas__logo_link img { max-height: 58px; width: auto; height: auto; }
+.main__logo--title { margin: 0; }
+.header__account--btn { color: var(--secondary-color); }
+.header__account--btn:hover { color: var(--primary-color); }
+.items__count.style2, .items__count.wishlist.style2 {
+    background: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+/* ---------- Breadcrumb ---------- */
+.breadcrumb__section.breadcrumb__bg {
+    background: linear-gradient(rgba(28,26,22,.62), rgba(28,26,22,.62)), url(../img/banner/breadcrumb-bg.png) center/cover;
+    padding: 4.4rem 0;
+}
+@media (min-width: 992px) { .breadcrumb__section.breadcrumb__bg { padding: 5.6rem 0; } }
+/* ---------- Slim breadcrumb bar (includes/page-title.php) ----------
+   Replaces the full-bleed image hero on the pages that use page-title.php.
+   Left-aligned trail with an optional serif heading under it. */
+.pgcrumb {
+    padding: 2.6rem 0 2.2rem;
+    background: var(--ivory, #fdfcfa);
+    border-bottom: 1px solid var(--border-color3, #e4ded4);
+}
+.pgcrumb--bare { padding: 2.2rem 0; }
+.pgcrumb__nav { min-width: 0; }
+.pgcrumb__list {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+    margin: 0; padding: 0; list-style: none;
+}
+.pgcrumb__item { display: inline-flex; align-items: center; gap: .5rem; }
+.pgcrumb__item a, .pgcrumb__item span {
+    font-size: 1.2rem; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--ink-600, #6b6459);
+}
+.pgcrumb__item a:hover { color: var(--primary-color, #b0863b); }
+.pgcrumb__item span { color: var(--ink-900, #1f1b16); font-weight: 600; overflow-wrap: anywhere; }
+.pgcrumb__sep { color: var(--ink-600, #6b6459); opacity: .5; flex-shrink: 0; }
+.pgcrumb__title {
+    font-family: var(--font-serif); font-size: clamp(2.4rem, 3.2vw, 3.4rem);
+    line-height: 1.15; color: var(--ink-900, #1f1b16);
+    margin: 1.2rem 0 0; letter-spacing: .3px; overflow-wrap: anywhere;
+}
+
+.breadcrumb__content--title { color: #fff; letter-spacing: .6px; font-weight: 500; font-size: 3rem; }
+@media (min-width: 992px) { .breadcrumb__content--title { font-size: 3.4rem; } }
+.breadcrumb__content--title.mb-25 { margin-bottom: 1.2rem; }
+.breadcrumb__content--menu__items span,
+.breadcrumb__content--menu__items--link { color: #ded4c2; text-transform: uppercase; letter-spacing: 1.4px; font-size: 1.15rem; }
+.breadcrumb__content--menu__items--link:hover { color: var(--primary-color); }
+
+/* ---------- Hero slider ---------- */
+.hero__slider--items__inner.hero__slider--bg2__inner { padding: 8rem 0; }
+@media (min-width: 1200px) { .hero__slider--items__inner.hero__slider--bg2__inner { padding: 12rem 0; } }
+.slider__content { max-width: 560px; }
+.slider__content--desc.desc1 { margin-bottom: 2rem; }
+.slider__content--maintitle {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 4.4rem;
+    line-height: 1.12;
+    letter-spacing: .5px;
+}
+@media (min-width: 992px) { .slider__content--maintitle { font-size: 6rem; } }
+.slider__content--desc.desc2 { font-size: 1.7rem; line-height: 2.9rem; max-width: 440px; }
+.hero__slider--section .swiper__nav--btn { background: rgba(255,255,255,.14); backdrop-filter: blur(2px); border: 1px solid rgba(255,255,255,.35); color: #fff; }
+.hero__slider--section .swiper__nav--btn:hover { background: var(--primary-color); border-color: var(--primary-color); }
+
+/* ---------- Buttons ---------- */
+.primary__btn, button.primary__btn, a.primary__btn,
+.btn, .btn-primary, .btn-secondary, .btn-dark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    padding: 1.05rem 2.4rem;
+    font-family: var(--font-jost);
+    font-size: 1.22rem !important;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    border-radius: var(--radius);
+    border: 1px solid var(--secondary-color);
+    background: var(--secondary-color);
+    color: #fff;
+    cursor: pointer;
+    height: auto;
+    transition: color .2s var(--ease), background-color .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.primary__btn:hover, button.primary__btn:hover, a.primary__btn:hover,
+.btn:hover, .btn-primary:hover, .btn-dark:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+    text-decoration: none;
+}
+.primary__btn:focus-visible, .btn:focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(176, 134, 59, .35); }
+.primary__btn:disabled, .primary__btn[disabled], .btn:disabled { opacity: .5; pointer-events: none; }
+.btn-primary { background: var(--primary-color); border-color: var(--primary-color); }
+.btn-primary:hover { background: var(--secondary-color); border-color: var(--secondary-color); }
+.btn-outline-primary, .btn--ghost {
+    background: transparent; color: var(--secondary-color); border: 1px solid var(--secondary-color);
+}
+.btn-outline-primary:hover { background: var(--secondary-color); color: #fff; }
+.bg__secondary2.slider__btn.primary__btn { background: var(--primary-color); border-color: var(--primary-color); }
+.bg__secondary2.slider__btn.primary__btn:hover { background: transparent; border-color: #fff; }
+.continue__shopping--link {
+    text-transform: uppercase; letter-spacing: 1.6px; font-size: 1.2rem; font-weight: 600;
+    border-bottom: 1px solid var(--primary-color); padding-bottom: 3px;
+}
+
+/* ---------- Product cards (editorial) ---------- */
+.product__items {
+    border: 0;
+    background: transparent;
+    text-align: left;
+}
+.product__items--thumbnail {
+    position: relative;
+    background: var(--ivory);
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 3 / 3.6;
+    min-height: 300px; /* fallback if aspect-ratio unsupported */
+    margin-bottom: 1.6rem;
+}
+@supports (aspect-ratio: 1) { .product__items--thumbnail { min-height: 0; } }
+.product__items--thumbnail .product__items--link { display: block; height: 100%; }
+.product__items--img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: opacity .5s var(--ease), transform 1.2s var(--ease);
+}
+.product__items:hover .product__primary--img { transform: scale(1.06); }
+.product__badge--items {
+    position: absolute; top: 1.2rem; left: 1.2rem; z-index: 3;
+    background: #fff !important;
+    color: var(--secondary-color) !important;
+    text-transform: uppercase; letter-spacing: 1.6px; font-size: .92rem; font-weight: 700;
+    border-radius: 0; 
+    /* padding: .45rem .9rem; */
+}
+.product__wish {
+    position: absolute; top: 1rem; right: 1rem; z-index: 3;
+    width: 3.6rem; height: 3.6rem; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; color: var(--secondary-color);
+    box-shadow: var(--shadow-sm);
+    opacity: 0; transform: translateY(-6px);
+    transition: opacity .25s var(--ease), transform .25s var(--ease), background .2s, color .2s;
+}
+.product__items:hover .product__wish { opacity: 1; transform: translateY(0); }
+.product__wish:hover, .product__wish.is-active { background: var(--primary-color); color: #fff; }
+.product__addbar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+    transform: translateY(102%);
+    transition: transform .3s var(--ease);
+}
+.product__items:hover .product__addbar { transform: translateY(0); }
+.product__addbar button {
+    width: 100%; border: 0; cursor: pointer;
+    background: var(--secondary-color); color: #fff;
+    padding: 1.35rem;
+    font-family: var(--font-jost); font-size: 1.15rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    transition: background .2s var(--ease);
+}
+.product__addbar button:hover { background: var(--primary-color); }
+.product__addbar button:disabled { background: #9a9186; cursor: not-allowed; }
+.product__items--content { padding: 0; }
+.product__items--content__subtitle { display: block; margin-bottom: .5rem; }
+.product__items--content__title,
+.product__items--content__title a {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--secondary-color);
+}
+.product__items--content__title { margin-bottom: .7rem; }
+.product__items--content__title a:hover { color: var(--primary-color); }
+.product__items--price { display: flex; align-items: baseline; gap: 1rem; }
+.product__items--price .current__price { color: var(--secondary-color); font-weight: 600; font-size: 1.62rem; font-family: var(--font-jost); }
+.product__items--price .old__price { color: #a99a86; text-decoration: line-through; font-size: 1.35rem; }
+.product__items--price .price__divided { display: none; }
+/* touch devices: reveal actions */
+@media (hover: none) {
+    .product__wish { opacity: 1; transform: none; }
+    .product__addbar { position: static; transform: none; margin-top: 1.2rem; }
+    .product__items--thumbnail { aspect-ratio: 3 / 3.4; }
+}
+/* swiper product columns */
+.product__swiper--column4__activation .product__items { padding: 0; }
+
+/* ---------- Category banners (cinematic) ---------- */
+.banner__section.banner__style2 .section__heading { margin-bottom: 3.2rem !important; }
+.banner__items { position: relative; }
+.banner__items--thumbnail { border-radius: var(--radius); overflow: hidden; display: block; position: relative; }
+.banner__items--thumbnail::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,.55));
+    transition: background .4s var(--ease);
+}
+.banner__items:hover .banner__items--thumbnail::after { background: linear-gradient(180deg, rgba(0,0,0,.15) 10%, rgba(0,0,0,.6)); }
+.banner__items--thumbnail__img { transition: transform .9s var(--ease); width: 100%; }
+.banner__items:hover .banner__items--thumbnail__img { transform: scale(1.06); }
+.banner__items--content.style2 { z-index: 2; }
+.banner__items--content__title.style2 {
+    font-family: var(--font-serif); font-weight: 500; letter-spacing: 1px; color: #fff;
+    font-size: 2.6rem; line-height: 1.15;
+}
+.banner__items--content__link.style2 { color: #fff; border-bottom: 1px solid var(--primary-color); padding-bottom: 4px; display: inline-block; margin-top: 1rem; }
+
+/* ---------- Forms (Bootstrap-style, lighter) ---------- */
+.main__content_wrapper input[type="text"],
+.main__content_wrapper input[type="email"],
+.main__content_wrapper input[type="password"],
+.main__content_wrapper input[type="tel"],
+.main__content_wrapper input[type="number"],
+.main__content_wrapper input[type="search"],
+.main__content_wrapper input[type="date"],
+.main__content_wrapper input[type="datetime-local"],
+.main__content_wrapper input[type="time"],
+.main__content_wrapper textarea,
+.checkout__input--field,
+.widget__search--form__input,
+.predictive__search--input,
+.form-control {
+    display: block; width: 100%;
+    min-height: calc(1.5em + 1.6rem + 2px);
+    padding: .8rem 1.2rem;
+    font-size: 1.5rem; font-family: var(--font-jost); line-height: 1.5;
+    color: var(--ink-800); background-color: #fff;
+    border: 1px solid var(--border-color3) !important;
+    border-radius: var(--radius) !important;
+    appearance: none; -webkit-appearance: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.main__content_wrapper select, .form-select {
+    display: block; width: 100%;
+    min-height: calc(1.5em + 1.6rem + 2px);
+    padding: .8rem 3rem .8rem 1.2rem;
+    font-size: 1.5rem; font-family: var(--font-jost); line-height: 1.5;
+    color: var(--ink-800); background-color: #fff;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%235b544a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat; background-position: right 1rem center; background-size: 13px 10px;
+    border: 1px solid var(--border-color3) !important; border-radius: var(--radius) !important;
+    appearance: none; -webkit-appearance: none;
+}
+.main__content_wrapper input:focus, .main__content_wrapper select:focus,
+.main__content_wrapper textarea:focus, .checkout__input--field:focus,
+.form-control:focus, .form-select:focus {
+    outline: 0; border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(176, 134, 59, .2);
+}
+.main__content_wrapper input:disabled, .checkout__input--field:disabled { background: var(--ivory-2); }
+.main__content_wrapper input[type="checkbox"], .main__content_wrapper input[type="radio"] { accent-color: var(--primary-color); }
+.checkout__input--label { font-weight: 600; color: var(--secondary-color); letter-spacing: .3px; font-size: 1.3rem; text-transform: uppercase; }
+.quantity__box input, .quantity__box .quantity__number {
+    border: 0 !important; box-shadow: none !important; min-height: 0 !important;
+    padding: 0 !important; width: 4rem; text-align: center; background: transparent;
+}
+.predictive__search--input { border-width: 0 0 1px 0 !important; border-radius: 0 !important; }
+
+/* ---------- Cart / checkout ---------- */
+.cart__title, .checkout__title, .section__header--title { font-family: var(--font-serif); font-weight: 500; }
+.cart__table--inner { border: 1px solid var(--border-color); border-radius: var(--radius); overflow: hidden; }
+.cart__table--header__items { background: var(--ivory); }
+.cart__table--header__list { text-transform: uppercase; letter-spacing: 1.4px; font-size: 1.1rem; color: var(--secondary-color); font-weight: 600; height: 42px; }
+.cart__table--body__items { transition: background .2s var(--ease); }
+.cart__table--body__items:hover { background: var(--ivory); }
+.cart__content--title, .cart__content--title a { font-family: var(--font-serif); font-weight: 500; font-size: 1.8rem; }
+.cart__price, .cart__price.end { color: var(--secondary-color); font-weight: 600; font-family: var(--font-jost); }
+.cart__summary { background: var(--ivory); border: 1px solid var(--border-color); padding: 2.8rem; }
+.quantity__value:hover { color: var(--primary-color); }
+.cart__remove--btn:hover svg path { fill: #b23b30; stroke: #b23b30; }
+.offCanvas__minicart { border-left: 3px solid var(--primary-color); }
+.minicart__title { font-family: var(--font-serif); font-weight: 500; }
+
+/* ---------- Pagination ---------- */
+.pagination__wrapper { gap: 8px; }
+.pagination__item, .pagination__item--arrow {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 42px; height: 42px; padding: 0 6px;
+    border: 1px solid var(--border-color3); border-radius: var(--radius);
+    color: var(--secondary-color); font-family: var(--font-jost); font-size: 1.3rem;
+}
+.pagination__item:hover, .pagination__item--arrow:hover,
+.pagination__list.pagination__item--current .pagination__item {
+    background: var(--secondary-color); border-color: var(--secondary-color); color: #fff;
+}
+
+/* ---------- Shop layout ---------- */
+.shop__layout { display: grid; grid-template-columns: 260px 1fr; gap: 4.5rem; align-items: start; position: relative; }
+@media (max-width: 991px) { .shop__layout { grid-template-columns: 1fr; gap: 2rem; } }
+
+.category__chips { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 4rem; justify-content: center; }
+.category__chips a {
+    padding: .9rem 1.8rem; border: 1px solid var(--border-color3); border-radius: 30px;
+    text-transform: uppercase; letter-spacing: 1.4px; font-size: 1.1rem; font-weight: 600; color: var(--secondary-color);
+}
+.category__chips a:hover { background: var(--secondary-color); border-color: var(--secondary-color); color: #fff; }
+.category__intro { max-width: 760px; margin: 0 auto 4rem; text-align: center; }
+
+/* toolbar */
+.shop__toolbar {
+    display: flex; align-items: center; gap: 1.6rem;
+    padding-bottom: 1.8rem; margin-bottom: 3.2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.shop__toolbar .product__showing--count {
+    flex: 1; margin: 0;
+    text-transform: uppercase; letter-spacing: 1.4px; font-size: 1.12rem; color: var(--text-gray-color);
+}
+.shop__toolbar--filters {
+    display: none; align-items: center; gap: 7px;
+    background: transparent; border: 1px solid var(--border-color3); border-radius: var(--radius);
+    padding: .8rem 1.4rem; font-size: 1.15rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--secondary-color); cursor: pointer;
+}
+.shop__toolbar--sort { display: flex; align-items: center; gap: 1rem; margin: 0; }
+.shop__toolbar--sort > span { text-transform: uppercase; letter-spacing: 1.4px; font-size: 1.05rem; color: var(--text-gray-color); font-weight: 600; }
+.shop__toolbar--sort select {
+    border: 0 !important; border-bottom: 1px solid var(--secondary-color) !important; border-radius: 0 !important;
+    padding: .4rem 2.4rem .4rem .4rem !important; min-height: 0 !important;
+    font-size: 1.35rem !important; font-weight: 500; background-position: right .4rem center;
+    width: auto; cursor: pointer;
+}
+@media (max-width: 991px) {
+    .shop__toolbar--filters { display: inline-flex; }
+    .shop__toolbar .product__showing--count { flex: none; }
+    .shop__toolbar { flex-wrap: wrap; }
+}
+
+/* ---------- Filter panel ---------- */
+.shop__filters { position: relative; }
+.filter__form { display: block; }
+.filter__panel--head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-bottom: 1.4rem; margin-bottom: 2.4rem; border-bottom: 1px solid var(--secondary-color);
+}
+.filter__panel--title { font-family: var(--font-serif); font-size: 2rem; font-weight: 500; color: var(--secondary-color); }
+.filter__clear { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary-deep); border-bottom: 1px solid currentColor; }
+
+.filter__group { padding-bottom: 2.6rem; margin-bottom: 2.6rem; border-bottom: 1px solid var(--border-color); }
+.filter__group--last { border-bottom: 0; }
+.filter__group--label {
+    display: block; margin-bottom: 1.4rem;
+    text-transform: uppercase; letter-spacing: 2px; font-size: 1.05rem; font-weight: 700; color: var(--secondary-color);
+}
+
+/* search */
+.filter__search { position: relative; }
+.filter__search svg { position: absolute; left: 1.2rem; top: 50%; transform: translateY(-50%); color: var(--text-gray-color); }
+.filter__search input {
+    width: 100%; border: 1px solid var(--border-color3); border-radius: var(--radius);
+    padding: .95rem 1.2rem .95rem 3.6rem; font-size: 1.4rem; font-family: var(--font-jost); background: #fff;
+}
+.filter__search input:focus { outline: 0; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(176,134,59,.18); }
+
+/* category list */
+.filter__cats { list-style: none; margin: 0; padding: 0; }
+.filter__cats--sub { margin-top: .4rem; }
+.filter__cat {
+    display: block; cursor: pointer; position: relative;
+    padding: .7rem 0 .7rem 0; font-size: 1.42rem; color: var(--ink-600);
+    transition: color .18s var(--ease);
+}
+.filter__cat input { position: absolute; opacity: 0; pointer-events: none; }
+.filter__cat span { display: inline-block; }
+.filter__cat--main span { font-weight: 600; color: var(--secondary-color); }
+.filter__cats--sub .filter__cat { padding-left: 1.6rem; font-size: 1.32rem; }
+.filter__cat:hover { color: var(--primary-color); }
+.filter__cat.is-active { color: var(--primary-color); }
+.filter__cat.is-active span { font-weight: 600; }
+.filter__cat.is-active::before {
+    content: ""; position: absolute; left: -1.2rem; top: 50%; transform: translateY(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: var(--primary-color);
+}
+.filter__cats--sub .filter__cat.is-active::before { left: .4rem; }
+
+/* price */
+.filter__price { display: flex; align-items: center; gap: 1rem; }
+.filter__price--field {
+    flex: 1; display: flex; align-items: center; gap: .4rem;
+    border: 1px solid var(--border-color3); border-radius: var(--radius); padding: 0 1rem; background: #fff;
+}
+.filter__price--field span { color: var(--text-gray-color); font-size: 1.35rem; }
+.filter__price--field input {
+    width: 100%; border: 0 !important; box-shadow: none !important; min-height: 0 !important;
+    padding: .95rem .2rem !important; font-size: 1.4rem; background: transparent;
+}
+.filter__price--field:focus-within { border-color: var(--primary-color); }
+.filter__price--dash { color: var(--text-gray-color); }
+
+/* toggle */
+.filter__toggle { display: flex; align-items: center; gap: 1rem; cursor: pointer; font-size: 1.42rem; color: var(--ink-600); }
+.filter__toggle input { position: absolute; opacity: 0; }
+.filter__toggle--box {
+    width: 2rem; height: 2rem; border: 1px solid var(--border-color3); border-radius: var(--radius);
+    flex-shrink: 0; position: relative; transition: all .18s var(--ease);
+}
+.filter__toggle input:checked + .filter__toggle--box { background: var(--primary-color); border-color: var(--primary-color); }
+.filter__toggle input:checked + .filter__toggle--box::after {
+    content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.filter__toggle input:focus-visible + .filter__toggle--box { box-shadow: 0 0 0 3px rgba(176,134,59,.25); }
+
+.filter__apply { width: 100%; margin-top: .6rem; }
+
+/* mobile slide-in filter panel */
+.shop__filters--backdrop { display: none; }
+@media (max-width: 991px) {
+    .shop__filters {
+        position: fixed; top: 0; left: 0; bottom: 0; z-index: 1200;
+        width: 84vw; max-width: 340px; background: #fdfcfa; padding: 2.6rem 2.2rem;
+        overflow-y: auto; transform: translateX(-102%); transition: transform .3s var(--ease);
+        box-shadow: 0 0 40px rgba(0,0,0,.2);
+    }
+    .shop__layout.filters-open .shop__filters { transform: translateX(0); }
+    .shop__layout.filters-open .shop__filters--backdrop {
+        display: block; position: fixed; inset: 0; z-index: 1100; background: rgba(28,26,22,.4);
+    }
+}
+@media (min-width: 992px) { .filter__apply { display: none; } }
+
+/* ---------- Account / auth ---------- */
+.account__section .account__login, .account__sidebar {
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: none;
+}
+.account__login--title { font-family: var(--font-serif); font-weight: 500; }
+
+/* ---------- Flash bar ---------- */
+.flash__bar { font-size: 1.3rem; letter-spacing: .3px; padding: 1.1rem 1.6rem; }
+.flash__bar.is-success { background: #1f6d4a; }
+.flash__bar.is-error { background: #b23b30; }
+
+/* ---------- Footer (compact) ---------- */
+.footer__section.bg__black {
+    background: var(--secondary-color) !important;
+    padding-top: 0;
+    border-top: 1px solid var(--primary-color);
+    border-top-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
+}
+.main__footer { padding: 3.4rem 0 1.4rem; border-bottom: 0; }
+@media (min-width: 992px) { .main__footer { padding: 4rem 0 1.6rem; } }
+.footer__section .footer__widget { margin-bottom: 2rem; }
+
+.footer__widget--title {
+    font-family: var(--font-serif);
+    color: var(--ofwhite-color);
+    font-weight: 500;
+    font-size: 1.9rem;
+    margin-bottom: 1.2rem;
+    padding-bottom: .8rem;
+}
+@media (min-width: 992px) { .footer__widget--title { padding-bottom: .8rem; } }
+/* the theme's grey underline bar -> short gold rule */
+.footer__widget--title::before { width: 3.2rem; height: 1px; background: var(--primary-color); }
+
+.footer__widget--desc { font-size: 1.36rem; line-height: 2.3rem; margin-bottom: 1.4rem !important; }
+.footer__widget--menu__text { font-size: 1.36rem; line-height: 2.4rem; display: inline-block; }
+.footer__widget--menu__list { margin-bottom: .1rem; }
+/* links nudge toward their gold hover instead of just recolouring */
+.footer__widget--menu__text { transition: color .25s var(--ease), transform .25s var(--ease); }
+.footer__widget--menu__text:hover { color: var(--primary-color); transform: translateX(3px); }
+
+.footer__section .social__title { font-size: 1.3rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: .9rem !important; }
+.footer__apps { margin-bottom: 1.4rem !important; }
+.footer__section .social__shear--list__icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 3.4rem; height: 3.4rem;
+    border: 1px solid rgba(255,255,255,.22); border-radius: 50%;
+    transition: border-color .25s var(--ease), background .25s var(--ease), color .2s;
+}
+.social__shear--list__icon:hover { border-color: var(--primary-color); background: rgba(176,134,59,.14); color: var(--primary-color); }
+.footer__section .social__shear--list { margin-right: .9rem; }
+
+.footer__bottom {
+    border-top: 1px solid rgba(255,255,255,.1);
+    padding: 1.4rem 0 1.6rem;
+    margin-top: 1.6rem;
+}
+.copyright__content { font-size: 1.2rem; letter-spacing: .4px; }
+
+/* ---------- Product details ---------- */
+.product__details--info__title { font-family: var(--font-serif); font-weight: 500; font-size: 3.4rem; }
+.product__details--info__price .current__price { color: var(--secondary-color); font-weight: 600; font-size: 2.4rem; font-family: var(--font-jost); }
+.product__details--info__price .old__price { color: #a99a86; text-decoration: line-through; }
+.product__details--tab__list {
+    text-transform: uppercase; letter-spacing: 1.6px; font-size: 1.2rem;
+    font-family: var(--font-jost); font-weight: 600; padding-bottom: 1rem;
+}
+.product__details--tab__list.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+.pd__variant--option.is-checked { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+.guarantee__safe--checkout { border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.6rem; background: var(--ivory); }
+.product__enquiry { border-top: 1px solid var(--border-color); padding-top: 1.8rem; }
+
+/* ---------- Offer / ad banners ---------- */
+.ad-strip {
+    position: relative; overflow: hidden;
+    padding: 5.5rem 0; min-height: 240px;
+    display: flex; align-items: center;
+    background-color: var(--secondary-color); background-repeat: no-repeat;
+}
+.ad-strip .container, .ad-strip .container-fluid { position: relative; z-index: 1; width: 100%; }
+.ad-strip__inner { max-width: 560px; }
+.ad-strip--light, .ad-strip--light .ad-strip__title, .ad-strip--light .ad-strip__desc { color: #fff; }
+.ad-strip--dark, .ad-strip--dark .ad-strip__title, .ad-strip--dark .ad-strip__desc { color: var(--secondary-color); }
+.ad-strip__label { display: inline-block; margin-bottom: 1.3rem; color: #e2bd7d; }
+.ad-strip--dark .ad-strip__label { color: var(--primary-deep); }
+.ad-strip__title { font-family: var(--font-serif); font-weight: 500; font-size: 2.9rem; line-height: 1.18; margin-bottom: 1.1rem; letter-spacing: .3px; }
+@media (min-width: 992px) { .ad-strip__title { font-size: 3.4rem; } }
+.ad-strip__desc { font-size: 1.5rem; line-height: 2.5rem; margin-bottom: 2rem; opacity: .9; max-width: 42ch; }
+.ad-strip__btn { margin-top: .4rem; }
+
+.ad__section { padding-top: 0; }
+.ad-card { display: block; position: relative; border-radius: var(--radius); overflow: hidden; background: #000; }
+.ad-card__img { width: 100%; height: 260px; object-fit: cover; opacity: .85; transition: transform .9s var(--ease), opacity .3s var(--ease); }
+.ad-card:hover .ad-card__img { transform: scale(1.05); opacity: .74; }
+.ad-card__body { position: absolute; inset: auto 0 0 0; padding: 2.4rem; background: linear-gradient(transparent, rgba(0,0,0,.75)); color: #fff; }
+.ad-card__label { display: inline-block; margin-bottom: .7rem; color: #e2bd7d; }
+.ad-card__title { font-family: var(--font-serif); font-weight: 500; color: #fff; font-size: 2.2rem; margin-bottom: .7rem; }
+.ad-card__btn { text-transform: uppercase; letter-spacing: 1.6px; font-size: 1.05rem; font-weight: 600; border-bottom: 1px solid var(--primary-color); padding-bottom: 3px; }
+
+/* countdown - slim inline pills */
+.ad-countdown { display: flex; gap: 8px; margin: 0 0 1.8rem; }
+.ad-countdown span {
+    display: inline-flex; align-items: baseline; gap: 3px;
+    padding: 5px 10px;
+    background: rgba(255,255,255,.12);
+    border-radius: 20px;
+    font-family: var(--font-jost); font-weight: 600; font-size: 1.4rem; line-height: 1;
+}
+.ad-strip--dark .ad-countdown span { background: rgba(28,26,22,.07); }
+.ad-countdown span i { font-style: normal; font-size: .92rem; font-weight: 500; opacity: .7; }
+.ad-countdown--sm span { padding: 4px 8px; font-size: 1.25rem; }
+@media (max-width: 767px) {
+    .ad-strip { padding: 4rem 0; min-height: 200px; }
+    .ad-strip__title { font-size: 2.3rem; }
+    .ad-card__img { height: 210px; }
+}
+
+/* ---------- Topbar rates (single-row moving ticker) ---------- */
+.header__topbar--inner { min-height: 3.1rem; }
+.header__shipping { flex: 1 1 auto; min-width: 0; }
+.language__currency { flex: 0 0 auto; }
+.header__rates {
+    position: relative; overflow: hidden; width: 100%;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 4%, #000 92%, transparent);
+}
+.header__rates--track {
+    display: inline-flex; align-items: center; gap: 1.4rem;
+    white-space: nowrap; will-change: transform;
+    animation: rateMarquee 42s linear infinite;
+}
+.header__rates:hover .header__rates--track { animation-play-state: paused; }
+@keyframes rateMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.header__rates--label { text-transform: uppercase; letter-spacing: 1.8px; font-size: 1rem; color: rgba(255,255,255,.45); }
+.header__rates--item { color: rgba(255,255,255,.8); font-size: 1.2rem; letter-spacing: .3px; }
+.header__rates--item b { color: #e7c98f; font-weight: 600; margin-right: .35rem; }
+.header__rates--sep { color: rgba(255,255,255,.28); font-size: .9rem; }
+.header__rates--link { color: rgba(255,255,255,.8); border-bottom: 1px solid rgba(255,255,255,.28); padding-bottom: 1px; margin-right: 1.4rem; }
+.header__rates--link:hover { color: #e7c98f; border-color: #e7c98f; }
+.language__currency .header__shipping--text a { color: rgba(255,255,255,.85); }
+.language__currency .header__shipping--text a:hover { color: #e7c98f; }
+/* Mobile topbar: the marquee and a two-number phone cannot share one ~360px row
+   — the ticker was being clipped mid-value ("22K ₹6,9") right up against the
+   phone text. Below 768px they stack: phone first (it is the CTA), rates below
+   as a full-width marquee, so both stay readable. */
+@media (max-width: 767px) {
+    .header__topbar--inner { flex-wrap: wrap; justify-content: center; padding: .5rem 0; }
+    .language__currency { order: 1; flex: 1 1 100%; min-width: 0; }
+    .header__shipping   { order: 2; flex: 1 1 100%; min-width: 0; }
+    .language__currency .header__topbar--list { justify-content: center; width: 100%; }
+    .language__currency .header__shipping--text { font-size: 1.2rem; }
+    .language__currency .header__shipping--text a { flex-wrap: wrap; justify-content: center; gap: 4px 6px; }
+    /* "Today's Rate" is redundant once the ticker is on its own line */
+    .header__rates--label { display: none; }
+    .header__rates--item { font-size: 1.12rem; }
+    .header__rates--link { margin-right: 1rem; }
+}
+
+@media (max-width: 575px) {
+    .language__currency .header__shipping--text:not(:first-child) { display: none; }
+}
+
+/* ---------- Offcanvas drawer (mobile menu) ----------
+   The theme caps .offcanvas__menu_ul at max-height:300px with its own
+   overflow:auto, so a scrollbar appeared *inside* the list — mid-drawer, with
+   empty white space underneath — even when only six items were showing. And
+   .offcanvas__menu was height:100% of a 100vh parent, i.e. a full viewport tall
+   underneath the logo row, so its end hung below the screen.
+
+   Instead: the drawer is a flex column, the logo row is fixed, and the nav takes
+   exactly the leftover height. overflow-y:auto then shows a scrollbar only when
+   the menu genuinely doesn't fit (e.g. once the Shop accordion is expanded). */
+.offcanvas__inner { display: flex; flex-direction: column; }
+.offcanvas__logo { flex: 0 0 auto; }
+.offcanvas__menu {
+    flex: 1 1 auto;
+    /* without min-height:0 a flex child refuses to shrink below its content, so
+       it would overflow the drawer instead of scrolling inside it */
+    min-height: 0;
+    height: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;   /* don't scroll the page behind the drawer */
+    -webkit-overflow-scrolling: touch;
+}
+.offcanvas__menu_ul { max-height: none; overflow: visible; }
+
+/* when it does appear, make it a slim themed bar rather than a chunky default */
+.offcanvas__menu { scrollbar-width: thin; scrollbar-color: rgba(31,27,22,.25) transparent; }
+.offcanvas__menu::-webkit-scrollbar { width: 4px; }
+.offcanvas__menu::-webkit-scrollbar-track { background: transparent; }
+.offcanvas__menu::-webkit-scrollbar-thumb { background: rgba(31,27,22,.22); border-radius: 4px; }
+.offcanvas__menu::-webkit-scrollbar-thumb:hover { background: rgba(31,27,22,.38); }
+
+/* ---------- Floating quick contact ---------- */
+/* pointer-events:none on the shell — the collapsed menu is visibility:hidden but
+   still laid out, so the container's box reached up over #scroll__top (z-index
+   900 vs 99) and ate its clicks. Only the real buttons take pointer events. */
+.quick__contact { position: fixed; right: 20px; bottom: 20px; z-index: 900; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: none; }
+.quick__contact--toggle, .quick__contact--btn { pointer-events: auto; }
+.quick__contact--toggle {
+    width: 54px; height: 54px; border-radius: 50%; border: 0; cursor: pointer;
+    background: #25D366; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.22);
+    display: flex; align-items: center; justify-content: center; transition: transform .2s var(--ease);
+}
+.quick__contact--toggle:hover { transform: scale(1.06); }
+.quick__contact--menu { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; opacity: 0; visibility: hidden; transform: translateY(12px); transition: all .22s var(--ease); }
+.quick__contact.is-open .quick__contact--menu { opacity: 1; visibility: visible; transform: translateY(0); }
+.quick__contact--btn { display: inline-flex; align-items: center; gap: 9px; padding: 9px 14px; border-radius: 30px; color: #fff; font-size: 1.25rem; font-weight: 600; box-shadow: 0 6px 18px rgba(0,0,0,.18); white-space: nowrap; }
+.quick__contact--btn:hover { color: #fff; text-decoration: none; filter: brightness(1.05); }
+.quick__contact--btn.qc-wa { background: #25D366; }
+.quick__contact--btn.qc-call { background: var(--secondary-color); }
+.quick__contact--btn.qc-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+/* Mobile: dock above the bottom bar and fan out sideways.
+   .offcanvas__stikcy--toolbar is fixed at bottom:0 from 991px down (~74px tall:
+   10+10 padding + 3rem icon + label), so the old upward column of four bubbles
+   ran straight into it. Below 992px the widget sits clear of that bar and the
+   menu opens horizontally to the left of the toggle instead of vertically. */
+@media (max-width: 991px) {
+    .quick__contact {
+        right: 14px;
+        bottom: calc(var(--qc-dock, 86px) + env(safe-area-inset-bottom, 0px));
+        flex-direction: row-reverse;   /* toggle stays right, menu grows left */
+        align-items: center;
+        gap: 10px;
+    }
+    .quick__contact--menu {
+        flex-direction: row-reverse;   /* WhatsApp nearest the thumb */
+        align-items: center;
+        gap: 8px;
+        transform: translateX(16px);   /* slide in from the right, not upward */
+    }
+    .quick__contact.is-open .quick__contact--menu { transform: translateX(0); }
+
+    .quick__contact--toggle { width: 48px; height: 48px; }
+    .quick__contact--toggle svg { width: 22px; height: 22px; }
+    .quick__contact.is-open .quick__contact--toggle { transform: rotate(90deg); }
+
+    /* labels off: these are icon-only circles in the fan */
+    .quick__contact--btn {
+        width: 44px; height: 44px; padding: 0;
+        border-radius: 50%; justify-content: center;
+    }
+    .quick__contact--btn span { display: none; }
+}
+
+/* ---------- Floating button column on mobile (scroll-top + quick contact) ----
+   #scroll__top ships as bottom:80px / right:25px / z-index:99 and the contact
+   toggle sits at bottom:86px / right:14px / z-index:900 — they occupied the same
+   corner, so the green bubble simply painted over the scroll button and it
+   looked missing. They are now one right-edge column, clear of the bottom bar:
+
+       scroll to top   <- --qc-dock + 56px
+       contact toggle  <- --qc-dock
+       [ bottom nav ]  <- ~74px tall
+
+   --qc-dock lives on <body> so both buttons read the same value and move
+   together (a product page's sticky buy bar raises it below). */
+@media (max-width: 991px) {
+    #scroll__top {
+        right: 14px;
+        bottom: calc(var(--qc-dock, 86px) + 56px + env(safe-area-inset-bottom, 0px));
+        width: 44px; height: 44px;
+        z-index: 899;   /* below the contact fan, above the bottom toolbar */
+    }
+    #scroll__top svg { width: 20px; }
+}
+
+/* ---------- Desktop: line the two floating buttons up ----------
+   Two separate problems made this look crooked:
+   1. The collapsed .quick__contact--menu is visibility:hidden but STILL LAID
+      OUT, so with flex-direction:column the toggle sat at the top of a ~210px
+      tall block — the bubble floated ~180px off the corner while #scroll__top
+      sat at bottom:80px. column-reverse pins the toggle to the bottom of the
+      bottom-anchored shell and lets the menu grow upward instead.
+   2. They used different right offsets (20px vs 25px), so they never lined up
+      vertically either. Both are now 24px with matching 54px boxes. */
+@media (min-width: 992px) {
+    .quick__contact { right: 24px; bottom: 24px; flex-direction: column-reverse; }
+    #scroll__top {
+        right: 24px;
+        bottom: 90px;            /* 24 bottom + 54 toggle + 12 gap */
+        width: 54px; height: 54px;
+    }
+    /* the contact menu fans upward through this spot — step aside while open */
+    body:has(.quick__contact.is-open) #scroll__top { opacity: 0; visibility: hidden; }
+}
+
+/* No product-page override is needed: the 86px dock already clears both the
+   ~74px bottom nav and the ~62px .pdx__stickybar (all three are anchored to
+   bottom:0, so they overlap rather than stack). Raise --qc-dock on <body> here
+   if a taller fixed bar is ever added. */
+
+/* ---------- Scheme cards & detail ---------- */
+.scheme__card { display: flex; flex-direction: column; border: 1px solid var(--border-color); border-radius: var(--radius); overflow: hidden; background: #fff; transition: box-shadow .35s var(--ease), transform .35s var(--ease); }
+.scheme__card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
+.scheme__card--img { width: 100%; height: 210px; object-fit: cover; }
+.scheme__card--body { padding: 2.4rem; display: flex; flex-direction: column; flex: 1; }
+.scheme__card--title { font-family: var(--font-serif); font-weight: 500; margin: .8rem 0; font-size: 2.1rem; }
+.scheme__card--desc { color: var(--text-gray-color); font-size: 1.42rem; flex: 1; line-height: 2.4rem; }
+.scheme__card--meta { list-style: none; padding: 0; margin: 1.6rem 0; display: flex; gap: 2rem; font-size: 1.3rem; }
+.scheme__card--meta strong { color: var(--secondary-color); font-size: 1.7rem; font-family: var(--font-jost); }
+.scheme__meta--num { font-family: var(--font-jost); font-size: 3rem; font-weight: 600; color: var(--primary-color); }
+.scheme__filter .btn { text-transform: none; letter-spacing: .4px; }
+
+/* ---------- Engagement forms ---------- */
+.engage__form { background: var(--ivory); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 3rem; }
+.engage__aside { background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 2.4rem; }
+.engage__aside--item { padding: 1rem 0; border-bottom: 1px solid var(--border-color); gap: 12px; }
+.engage__aside--item:last-child { border-bottom: 0; }
+.engage__aside--item img { width: 54px; height: 54px; object-fit: cover; border-radius: 2px; }
+.engage__form .js-star svg path, .js-star svg path { fill: #d8d0bf; }
+.engage__form .js-star.active svg path, .js-star.active svg path { fill: var(--primary-color); }
+
+/* ---------- App badges / digigold ---------- */
+.app__badge { display: inline-flex; align-items: center; gap: 10px; padding: 11px 20px; background: var(--secondary-color); color: #fff; border-radius: var(--radius); }
+.app__badge:hover { color: #fff; text-decoration: none; background: #000; }
+.app__badge span { font-size: 1.5rem; font-weight: 600; line-height: 1.1; }
+.app__badge span small { font-size: .98rem; font-weight: 400; opacity: .8; }
+/* Footer variant — gold outline against the dark maroon footer, using the same
+   gold as the header rate ticker so the two accents agree.
+   Deliberately scoped to --sm: the base .app__badge above stays solid dark for
+   digigold.php, which sits on a LIGHT section where a transparent badge with
+   pale text would disappear. */
+.app__badge--sm {
+    --app-gold: #e7c98f;
+    gap: 9px;
+    padding: 9px 15px;
+    background: transparent;
+    border: 1px solid rgba(231, 201, 143, .42);
+    border-radius: 7px;
+    transition: border-color .25s var(--ease), background .25s var(--ease),
+                box-shadow .25s var(--ease), transform .25s var(--ease);
+}
+.app__badge--sm svg { color: var(--app-gold); flex-shrink: 0; }
+.app__badge--sm span { font-size: 1.22rem; letter-spacing: .3px; }
+/* small stays inline — the markup already carries a <br>, so display:block here
+   would double the line break */
+.app__badge--sm span small {
+    font-size: .88rem; letter-spacing: 1.3px; text-transform: uppercase;
+    color: var(--app-gold); opacity: .95;
+}
+.app__badge--sm:hover {
+    background: rgba(231, 201, 143, .09);
+    border-color: var(--app-gold);
+    box-shadow: 0 8px 20px -10px rgba(231, 201, 143, .6);
+    transform: translateY(-2px);
+}
+.digigold__points { list-style: none; padding: 0; }
+.digigold__points li { padding: .6rem 0 .6rem 2.6rem; position: relative; font-size: 1.55rem; }
+.digigold__points li::before { content: "\2713"; position: absolute; left: 0; color: var(--primary-color); font-weight: 700; }
+.digigold__rate { background: var(--ivory); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 2.8rem; }
+.digigold__rate table td { padding: .8rem 0; border-bottom: 1px solid var(--border-color); }
+.digigold__rate table tr:last-child td { border-bottom: 0; }
+
+/* ---------- Membership card ---------- */
+.membership__card {
+    background: linear-gradient(135deg, var(--secondary-color), #3a3226);
+    color: #fff; border-radius: var(--radius); padding: 2.4rem 2.6rem; margin-bottom: 2rem;
+    position: relative; overflow: hidden;
+}
+.membership__card::after {
+    content: ""; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(176,134,59,.35), transparent 70%);
+}
+.membership__card small { text-transform: uppercase; letter-spacing: 2.4px; font-size: .95rem; opacity: .65; }
+.membership__card .membership__no { font-family: var(--font-serif); font-size: 2.6rem; letter-spacing: 3px; }
+.membership__card .membership__tier { color: #e7c98f; text-transform: capitalize; font-weight: 600; }
+
+/* ---------- Account / auth pages (login, register, forgot, reset) ---------- */
+/* the .pgcrumb band above already separates this from the header, so the top
+   pad is trimmed rather than a full section step */
+.auth__section { padding: 3.4rem 0 var(--section-y); }
+@media (max-width: 767px) { .auth__section { padding-top: 2.4rem; } }
+.auth__panel {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+@media (min-width: 992px) { .auth__panel { grid-template-columns: 1fr 1fr; } }
+
+/* brand aside - desktop only; on phones the form is the whole card */
+.auth__aside {
+    display: none;
+    padding: 4.4rem 4rem;
+    background:
+        linear-gradient(160deg, rgba(28,26,22,.92) 0%, rgba(28,26,22,.74) 55%, rgba(65,19,17,.82) 100%),
+        url(../img/banner/necklaces.jpg) center/cover;
+}
+@media (min-width: 992px) { .auth__aside { display: flex; align-items: center; } }
+.auth__aside--eyebrow {
+    display: block; text-transform: uppercase; letter-spacing: 3px;
+    font-size: 1.05rem; font-weight: 600; color: var(--primary-color); margin-bottom: 1.6rem;
+}
+.auth__aside--title {
+    font-family: var(--font-serif); font-weight: 500; color: #fff;
+    font-size: 3rem; line-height: 1.22; margin: 0 0 2.6rem;
+}
+.auth__aside--list { list-style: none; padding: 0; margin: 0 0 3rem; }
+.auth__aside--list li {
+    position: relative; padding-left: 2.2rem; margin-bottom: 1.2rem;
+    font-size: 1.4rem; line-height: 2.3rem; color: rgba(255,255,255,.85);
+}
+/* small gold diamond bullet, echoing the section-heading ornament */
+.auth__aside--list li::before {
+    content: ""; position: absolute; left: 0; top: .8rem;
+    width: 7px; height: 7px; background: var(--primary-color); transform: rotate(45deg);
+}
+.auth__aside--foot {
+    margin: 0; padding-top: 2rem;
+    border-top: 1px solid rgba(255,255,255,.14);
+    font-size: 1.08rem; letter-spacing: 1.6px; text-transform: uppercase;
+    color: rgba(255,255,255,.55) !important;
+}
+
+/* form side */
+.auth__form { padding: 3rem 2.2rem; }
+@media (min-width: 768px) { .auth__form { padding: 4.4rem 4rem; } }
+.auth__form--head { margin-bottom: 2.4rem; }
+.auth__form--title { font-family: var(--font-serif); font-weight: 500; font-size: 2.7rem; margin: 0 0 .5rem; }
+.auth__form--sub { font-size: 1.45rem !important; line-height: 2.4rem; margin: 0; color: var(--ink-600); }
+.auth__form .mb-20 { margin-bottom: 1.7rem; }
+.auth__form .checkout__input--label { display: block; margin-bottom: .7rem; font-size: 1.15rem; letter-spacing: 1.2px; }
+.auth__form .primary__btn { width: 100%; padding: 1.35rem 2rem; margin-top: .4rem; }
+.auth__form p { font-size: 1.4rem; margin-bottom: .6rem; }
+.auth__form p.mt-20 { margin-top: 2.2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); }
+.auth__form a { color: var(--primary-deep); font-weight: 600; }
+.auth__form a:hover { color: var(--primary-color); text-decoration: underline; }
+
+/* password show/hide (button injected by auth-page.php) */
+.auth__pw { position: relative; }
+.auth__pw input { padding-right: 6.4rem !important; }
+.auth__pw--toggle {
+    position: absolute; top: 50%; right: .8rem; transform: translateY(-50%);
+    background: none; border: 0; cursor: pointer; padding: .4rem .6rem;
+    font-family: var(--font-jost); font-size: 1.1rem; font-weight: 600;
+    letter-spacing: 1.2px; text-transform: uppercase; color: var(--primary-deep);
+}
+.auth__pw--toggle:hover { color: var(--primary-color); }
+
+.auth__alert {
+    border-radius: var(--radius); padding: 1.2rem 1.4rem; margin-bottom: 1.8rem;
+    font-size: 1.35rem; line-height: 2.1rem;
+    border-left: 3px solid #b23b30; background: #fdf1ef; color: #8f2f26;
+}
+
+/* ---------- Form validation messages (assets/js/validate.js) ---------- */
+.field__error {
+    display: block;
+    margin-top: .5rem;
+    font-family: var(--font-jost);
+    font-size: 1.18rem;
+    line-height: 1.6rem;
+    color: #b23b30;
+}
+.field__error::before {
+    content: "!";
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px; margin-right: .5rem;
+    border-radius: 50%; background: #b23b30; color: #fff;
+    font-size: .95rem; font-weight: 700; vertical-align: 1px;
+}
+.main__content_wrapper .is-invalid,
+.main__content_wrapper input.is-invalid,
+.main__content_wrapper select.is-invalid,
+.main__content_wrapper textarea.is-invalid,
+.checkout__input--field.is-invalid,
+.contact__form--input.is-invalid {
+    border-color: #b23b30 !important;
+    background-color: #fdf6f5;
+}
+.main__content_wrapper .is-invalid:focus,
+.checkout__input--field.is-invalid:focus,
+.contact__form--input.is-invalid:focus {
+    border-color: #b23b30 !important;
+    box-shadow: 0 0 0 3px rgba(178, 59, 48, .18);
+}
+
+/* ---------- Misc ---------- */
+.bg__gray--color { background: var(--ivory) !important; border-radius: var(--radius); }
+/* Round + brand border so it reads as a deliberate pair with the round quick-
+   contact bubble it sits above, instead of a plain dark square on the ivory
+   page. (This rule previously forced border-radius:0 — that is what made it
+   square despite style.css setting 50%.) The hover border goes light so the
+   ring stays visible once the fill turns maroon. */
+#scroll__top {
+    background: var(--secondary-color);
+    border-radius: 50%;
+    border: 2px solid var(--primary-color);
+}
+#scroll__top:hover { background: var(--primary-color); border-color: rgba(255, 255, 255, .55); }
+hr { border-color: var(--border-color); }
+::selection { background: rgba(176,134,59,.25); }
+
+/* ---------- Bug fixes from QA round 1 ---------- */
+
+/* #3 the cart / wishlist badges are hidden outright at zero rather than
+   rendering a padded "00"; [hidden] needs to win over any display rule */
+.items__count[hidden] { display: none !important; }
+
+/* #4 / #5 cart + wishlist tables: centre every column heading and the cells
+   under it. The product column keeps its left edge because it holds an image
+   and a title block that would read as ragged when centred. */
+.cart__table--header__list { text-align: center; }
+/* .cart__table--header__list:first-child { text-align: left; } */
+.cart__table--body__list { text-align: center; vertical-align: middle; }
+.cart__table--body__list:first-child { text-align: left; }
+.cart__table--body__list .cart__price,
+.cart__table--body__list .cart__price.end { display: inline-block; float: none; }
+.cart__table--body__list .quantity__box { display: inline-flex; }
+.cart__table--body__list .d-flex.justify-content-end { justify-content: center !important; }
+/* the wishlist head/last cell carry .text-right from the theme; the centred
+   rule above is what we want instead */
+.cart__table--header__list.text-right,
+.cart__table--body__list.text-right { text-align: center; }
+@media only screen and (max-width: 575px) {
+    /* the theme stacks each row into a card below 576px, where centring the
+       product block is the right call after all */
+    .cart__table--body__list:first-child { text-align: center; }
+}
+
+/* #13 the show/hide password button is centred on the input alone. The inline
+   validation message lives outside .auth__pw (see includes/auth-page.php), so
+   the wrapper no longer grows when a field is flagged. */
+.auth__pw { display: block; }
+
+/* #8 required marker next to a field label */
+.checkout__input--label .req { color: #b23b30; font-weight: 700; margin-left: 2px; }
+
+/* #19 Remove is a <button> now (it posts, rather than being a GET link with a
+   token in the query string). Keep it looking exactly like the old icon link. */
+button.cart__remove--btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    color: inherit; font: inherit; margin-right: 0;
+}
+button.cart__remove--btn:disabled { opacity: .5; cursor: default; }
+button.wishlist__cart--btn { cursor: pointer; }
+
+/* Logo is an Admin -> Settings upload. Until one is set, the site name stands
+   in for it so the header never shows a broken image. */
+.main__logo--text {
+    display: inline-block;
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 2.4rem; font-weight: 600; letter-spacing: .5px;
+    color: var(--secondary-color, #1c1a16); line-height: 1.2;
+}
+@media (max-width: 575px) { .main__logo--text { font-size: 1.8rem; } }
+
+/* ---------- Topbar address ----------
+   The shop address is its own element now (see includes/header.php). It was
+   previously only rendered as the rate ticker's fallback, so turning the ticker
+   on removed the address from the header entirely.
+
+   Desktop: only shown when there is no ticker, since the two would fight for the
+   same left-hand strip. Mobile: always shown, on its own centred row, because
+   that is where a customer looks for "where is this shop". */
+.header__addr { display: none; margin: 0; padding: 0; list-style: none; }
+.header__addr--solo { display: flex; align-items: center; }
+
+@media (max-width: 767px) {
+    /* the topbar already stacks here: phone row, then ticker, now the address */
+    .header__shipping {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: .3rem;
+    }
+    .header__addr {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    .header__addr .header__shipping--text {
+        font-size: 1.08rem;
+        line-height: 1.55;
+        text-align: center;
+        align-items: flex-start;
+        padding: 0 1.2rem;
+        color: rgba(255, 255, 255, .72);
+    }
+    /* keep the pin from being squashed by the wrapping text beside it */
+    .header__addr .header__shipping--text__icon { margin-top: .25rem; }
+}
+
+@media (max-width: 575px) {
+    /* Both numbers stay — they are the reason someone opens this bar on a phone.
+       This used to hide every item after the first, which dropped the second
+       number too. `display: flex` (not block) because .header__shipping--text is
+       a flex row holding the icon beside the text.
+
+       The email needs no rule here: its <li> carries Bootstrap's .d-none, which
+       is `display: none !important`, so it stays hidden below 768px regardless. */
+    .language__currency .header__shipping--text:not(:first-child) { display: flex; }
+    .language__currency .header__topbar--list { flex-wrap: wrap; gap: 0 1.2rem; }
+    .header__addr .header__shipping--text { font-size: 1.02rem; }
+}
+
+/* =========================================================================
+   Deep-link highlight — admin "View on site" lands on one specific slide or
+   banner, so it gets a brief ring to say "this is the one you asked for".
+   ========================================================================= */
+.is-deeplink {
+    animation: deeplinkPulse 2.6s ease-out 1;
+    scroll-margin-top: 90px;      /* clears the sticky header */
+}
+@keyframes deeplinkPulse {
+    0%, 60% { box-shadow: 0 0 0 3px var(--primary-color, #c19a4b), 0 0 26px rgba(193, 154, 75, .45); }
+    100%    { box-shadow: 0 0 0 0 rgba(193, 154, 75, 0), 0 0 0 rgba(193, 154, 75, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .is-deeplink { animation: none; box-shadow: 0 0 0 3px var(--primary-color, #c19a4b); }
+}

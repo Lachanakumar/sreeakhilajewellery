@@ -1,0 +1,4 @@
+# Allow the endpoint files; block shared bootstrap includes.
+<FilesMatch "^_">
+    Require all denied
+</FilesMatch>

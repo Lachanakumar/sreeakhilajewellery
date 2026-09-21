@@ -1,0 +1,519 @@
+/* =========================================================================
+   Detail pages — product details + order details
+   Loaded per page via $pageStyles, after theme-refresh.css.
+   Every colour comes from the storefront theme tokens so it follows the
+   admin's Appearance settings.
+   ========================================================================= */
+:root {
+    --dt-accent: var(--primary-color, #b0863b);
+    --dt-ink: var(--ink-900, #1f1b16);
+    --dt-ink-soft: var(--ink-600, #6b6459);
+    --dt-line: var(--border-color3, #e4ded4);
+    --dt-surface: #fff;
+    --dt-wash: #faf7f2;
+    --dt-radius: 14px;
+    --dt-shadow: 0 1px 2px rgba(31, 27, 22, .04), 0 18px 40px -24px rgba(31, 27, 22, .28);
+}
+
+/* =========================================================================
+   PRODUCT DETAILS
+   ========================================================================= */
+.pdx { padding: 2.8rem 0 2rem; }
+.pdx__grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 3.4rem; align-items: start; }
+/* minmax(0,1fr), not 1fr: a bare 1fr track has an `auto` minimum, so the flex
+   .swiper-wrapper inside can force the column wider than the screen. */
+@media (max-width: 991px) { .pdx__grid { grid-template-columns: minmax(0, 1fr); gap: 2.2rem; } .pdx { padding: 2rem 0 1.4rem; } }
+
+/* ---- gallery ---- */
+.pdx__media { position: sticky; top: 2rem; }
+@media (max-width: 991px) { .pdx__media { position: static; } }
+.pdx__stage {
+    position: relative; background: var(--dt-wash); border: 1px solid var(--dt-line);
+    border-radius: var(--dt-radius); overflow: hidden;
+}
+/* the lightbox <a> is inline by default, which stops the image filling the
+   slide and leaves white bands either side */
+.pdx__stage .swiper-slide > a { display: block; width: 100%; }
+
+/* Pre-init / no-JS fallback. Swiper's own CSS makes .swiper-wrapper a flex row
+   whose slides are only given a real width once Swiper measures the container;
+   if that measurement happens too early (or never) every slide is 0 wide and
+   the stage paints as an empty grey box. Until initGallery() adds .is-ready,
+   show slide one as a plain block so there is always a visible photo.
+   `is-ready` is ours because Swiper 7 has no swiper-initialized class. */
+.pdx__stage:not(.is-ready) .swiper-wrapper { display: block; transform: none !important; }
+.pdx__stage:not(.is-ready) .swiper-slide { width: 100% !important; }
+.pdx__stage:not(.is-ready) .swiper-slide + .swiper-slide { display: none; }
+.pdx__thumbs:not(.is-ready) .swiper-wrapper { display: flex; gap: 10px; transform: none !important; }
+.pdx__thumbs:not(.is-ready) .swiper-slide { width: 88px !important; }
+.pdx__stage img { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+@supports not (aspect-ratio: 1 / 1) { .pdx__stage img { max-height: 560px; } }
+.pdx__zoom {
+    position: absolute; right: 14px; bottom: 14px; z-index: 3;
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, .92); color: var(--dt-ink);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .16); transition: background .2s, color .2s;
+}
+.pdx__zoom:hover { background: var(--dt-accent); color: #fff; }
+.pdx__badges { position: absolute; top: 14px; left: 14px; z-index: 3; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.pdx__badge {
+    padding: 5px 12px; border-radius: 999px; font-size: 1.1rem; font-weight: 600;
+    letter-spacing: .6px; text-transform: uppercase; background: var(--dt-ink); color: #fff;
+}
+.pdx__badge--sale { background: #b23b30; }
+.pdx__badge--out { background: #6b6459; }
+
+.pdx__thumbs { margin-top: 1.2rem; }
+.pdx__thumbs .swiper-slide { width: 88px; }
+.pdx__thumb {
+    border: 2px solid transparent; border-radius: 10px; overflow: hidden; cursor: pointer;
+    background: var(--dt-wash); display: block; transition: border-color .2s;
+}
+.pdx__thumb img { width: 100%; height: 84px; object-fit: cover; display: block; }
+.pdx__thumbs .swiper-slide-thumb-active .pdx__thumb { border-color: var(--dt-accent); }
+
+/* ---- info column ---- */
+.pdx__eyebrow {
+    display: block; font-size: 1.15rem; letter-spacing: 2.4px; text-transform: uppercase;
+    color: var(--dt-accent); font-weight: 600; margin-bottom: 1rem;
+}
+.pdx__title { font-family: var(--font-serif); font-size: clamp(2.6rem, 3.4vw, 3.6rem); line-height: 1.15; margin: 0 0 1.2rem; color: var(--dt-ink); }
+.pdx__ratingline { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; font-size: 1.5rem; }
+/* the "N reviews" jump link is the first place a shopper meets the count, so
+   it is lifted clear of the 1.5rem line it sits on */
+.pdx__ratingline a { font-weight: 600; font-size: 1.7rem; }
+.pdx__ratingline a { color: var(--dt-ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+.pdx__ratingline a:hover { color: var(--dt-accent); }
+
+.pdx__pricebox {
+    display: flex; align-items: baseline; gap: 1.2rem; flex-wrap: wrap;
+    padding: 1.3rem 0; border-top: 1px solid var(--dt-line); border-bottom: 1px solid var(--dt-line);
+    margin-bottom: 1.3rem;
+}
+.pdx__price { font-size: 3.2rem; font-weight: 600; color: var(--dt-ink); line-height: 1; }
+.pdx__price--was { font-size: 1.8rem; color: var(--dt-ink-soft); text-decoration: line-through; }
+.pdx__save { font-size: 1.25rem; font-weight: 600; color: #1e7e4f; background: #e8f5ee; padding: 4px 12px; border-radius: 999px; }
+.pdx__taxnote { flex-basis: 100%; font-size: 1.2rem; color: var(--dt-ink-soft); margin: .4rem 0 0; }
+
+.pdx__desc { font-size: 1.5rem; line-height: 1.75; color: var(--dt-ink-soft); margin-bottom: 1.4rem; }
+
+/* spec chips */
+.pdx__specs { display: flex; flex-wrap: wrap; gap: .8rem; margin-bottom: 1.4rem; padding: 0; list-style: none; }
+.pdx__spec {
+    display: flex; flex-direction: column; gap: 2px; min-width: 96px;
+    padding: .9rem 1.4rem; border: 1px solid var(--dt-line); border-radius: 10px; background: var(--dt-wash);
+}
+.pdx__spec dt { font-size: 1.05rem; letter-spacing: 1.2px; text-transform: uppercase; color: var(--dt-ink-soft); }
+.pdx__spec dd { margin: 0; font-size: 1.45rem; font-weight: 600; color: var(--dt-ink); }
+
+/* stock */
+.pdx__stock { display: inline-flex; align-items: center; gap: 8px; font-size: 1.35rem; font-weight: 600; margin-bottom: 1.1rem; }
+.pdx__stock::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.pdx__stock.in { color: #1e7e4f; }
+.pdx__stock.low { color: #b26a09; }
+.pdx__stock.out { color: #b23b30; }
+
+/* variants */
+.pdx__variant { margin-bottom: 1.3rem; }
+.pdx__variant--label { display: block; font-size: 1.25rem; letter-spacing: 1.4px; text-transform: uppercase; color: var(--dt-ink-soft); font-weight: 600; margin-bottom: .8rem; }
+.pdx__opts { display: flex; flex-wrap: wrap; gap: .8rem; }
+.pdx__opt {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 52px;
+    padding: .8rem 1.6rem; border: 1px solid var(--dt-line); border-radius: 8px;
+    font-size: 1.4rem; cursor: pointer; background: #fff; color: var(--dt-ink);
+    transition: border-color .18s, background .18s, color .18s;
+}
+.pdx__opt input { position: absolute; opacity: 0; pointer-events: none; }
+.pdx__opt:hover { border-color: var(--dt-accent); }
+.pdx__opt.is-checked { border-color: var(--dt-accent); background: var(--dt-accent); color: #fff; }
+.pdx__opt.is-disabled { opacity: .38; cursor: not-allowed; text-decoration: line-through; }
+
+/* buy row — quantity + the two CTAs on one line, message on its own */
+.pdx__buy { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.pdx__buy .quantity__box { flex: 0 0 auto; margin: 0; }
+.pdx__buy .primary__btn, .pdx__buy .pdx__buynow { flex: 1 1 170px; min-height: 48px; }
+/* validate.js drops the message here (see data-error-anchor) — give it the
+   whole row so it never squeezes into the stepper */
+.pdx__buy > .field__error { flex: 0 0 100%; margin: 0; }
+.pdx__buynow {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0 2.4rem; min-height: 46px; cursor: pointer;
+    background: var(--dt-ink); color: #fff; border: 1px solid var(--dt-ink);
+    border-radius: var(--radius, 2px);
+    font-family: var(--font-jost); font-size: 1.22rem; font-weight: 600;
+    letter-spacing: 1.8px; text-transform: uppercase;
+    transition: background .2s, border-color .2s, opacity .2s;
+}
+.pdx__buynow:hover { background: var(--dt-accent); border-color: var(--dt-accent); color: #fff; }
+.pdx__buynow:disabled, .pdx__buy .primary__btn:disabled { opacity: .45; cursor: not-allowed; }
+.pdx__stockmsg { font-size: 1.25rem; color: #b23b30; margin: 0 0 1.2rem; }
+
+/* secondary actions */
+.pdx__actions { display: flex; flex-wrap: wrap; gap: 2rem; padding: 1.2rem 0; border-top: 1px solid var(--dt-line); margin-bottom: 1.2rem; }
+.pdx__action {
+    display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 0;
+    font-size: 1.35rem; color: var(--dt-ink-soft); cursor: pointer; transition: color .18s;
+}
+.pdx__action:hover, .pdx__action.is-active { color: var(--dt-accent); }
+
+/* trust strip */
+.pdx__trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1.2rem; padding: 1.4rem; background: var(--dt-wash); border: 1px solid var(--dt-line); border-radius: var(--dt-radius); }
+.pdx__trust--item { display: flex; align-items: flex-start; gap: 10px; font-size: 1.25rem; line-height: 1.5; color: var(--dt-ink-soft); }
+.pdx__trust--item svg { flex-shrink: 0; color: var(--dt-accent); margin-top: 2px; }
+.pdx__trust--item strong { display: block; color: var(--dt-ink); font-size: 1.32rem; }
+
+/* enquiry */
+.pdx__enquiry { margin-top: 1.4rem; }
+.pdx__enquiry--box { margin-top: 1.4rem; padding: 2rem; border: 1px solid var(--dt-line); border-radius: var(--dt-radius); background: var(--dt-wash); }
+
+/* sticky mobile buy bar */
+.pdx__stickybar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    display: none; align-items: center; gap: 1.2rem;
+    padding: 1rem 1.6rem; background: #fff; border-top: 1px solid var(--dt-line);
+    box-shadow: 0 -6px 24px -12px rgba(31, 27, 22, .4);
+    transform: translateY(110%); transition: transform .28s ease;
+}
+.pdx__stickybar.is-on { transform: none; }
+.pdx__stickybar--price { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; color: var(--dt-ink); }
+.pdx__stickybar .primary__btn { margin-left: auto; }
+@media (max-width: 767px) {
+    .pdx__stickybar { display: flex; }
+    /* .quick__contact is z-index 900 and pinned bottom-right, so the WhatsApp
+       bubble sat on top of this bar's Add To Cart button. Outrank it here; the
+       bubble's own clearance is the --qc-dock column in theme-refresh.css.
+       Don't set `bottom` on .quick__contact from this file — it loads after
+       theme-refresh.css and would beat that dock calc. */
+    .pdx__stickybar { z-index: 901; }
+}
+
+/* ---- tabs ---- */
+.pdx__tabs { padding-bottom: 2.6rem; }
+.pdx__tabnav {
+    display: flex; gap: 2.8rem; border-bottom: 1px solid var(--dt-line);
+    margin-bottom: 2rem; list-style: none; padding: 0;
+    /* overflow-y must be stated: once overflow-x is not visible, a visible
+       overflow-y computes to auto, and the 2px active underline below is
+       enough to raise a vertical scrollbar. */
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* only scroll when the tabs genuinely don't fit; never show the bar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.pdx__tabnav::-webkit-scrollbar { display: none; }
+.pdx__tabnav li {
+    position: relative; padding: 0 0 1.1rem; cursor: pointer; white-space: nowrap;
+    font-family: var(--font-serif); font-size: 1.9rem; color: var(--dt-ink-soft); transition: color .2s;
+}
+/* bottom:0, not -1px — overflow-y:hidden above would clip anything hanging out */
+.pdx__tabnav li::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: var(--dt-accent); transform: scaleX(0); transform-origin: left; transition: transform .25s;
+}
+.pdx__tabnav li:hover { color: var(--dt-ink); }
+.pdx__tabnav li.active { color: var(--dt-ink); }
+.pdx__tabnav li.active::after { transform: scaleX(1); }
+.pdx__tabbody .tab_pane { display: none; }
+.pdx__tabbody .tab_pane.active, .pdx__tabbody .tab_pane.show { display: block; }
+.pdx__prose { font-size: 1.5rem; line-height: 1.9; color: var(--dt-ink-soft); max-width: 78ch; }
+.pdx__prose h2, .pdx__prose h3, .pdx__prose h4 { font-family: var(--font-serif); color: var(--dt-ink); margin: 2rem 0 1rem; }
+.pdx__prose ul, .pdx__prose ol { padding-left: 2rem; margin: 1rem 0; }
+.pdx__prose li { margin-bottom: .5rem; }
+
+/* spec table in the info tab */
+.pdx__spectable { width: 100%; border-collapse: collapse; max-width: 640px; font-size: 1.45rem; }
+.pdx__spectable th, .pdx__spectable td { text-align: left; padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--dt-line); }
+.pdx__spectable th { width: 40%; color: var(--dt-ink-soft); font-weight: 600; }
+.pdx__spectable tr:last-child th, .pdx__spectable tr:last-child td { border-bottom: 0; }
+
+/* ---- reviews ---- */
+.rvw__stars { display: inline-flex; gap: 2px; color: var(--dt-line); }
+.rvw__stars svg.is-on { color: #c8961f; }
+
+/* summary: score block + distribution bars */
+.rvw__summary {
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    gap: 3rem; align-items: center;
+    padding: 2rem 2.4rem; margin-bottom: 2.4rem;
+    background: var(--dt-wash); border: 1px solid var(--dt-line); border-radius: var(--dt-radius);
+}
+@media (max-width: 575px) { .rvw__summary { grid-template-columns: 1fr; gap: 1.8rem; padding: 1.8rem; } }
+.rvw__score { text-align: center; min-width: 118px; }
+.rvw__score--num { display: block; font-family: var(--font-jost); font-size: 4.2rem; line-height: 1; color: var(--dt-ink); }
+.rvw__score--out { display: block; font-size: 1.15rem; color: var(--dt-ink-soft); margin-top: .3rem; }
+.rvw__score .rvw__stars { margin: .8rem 0 .4rem; }
+/* #21 the review count was set in 1.2rem, smaller than the body text and easy
+   to miss next to the 4.2rem score. 1.6rem still read as fine print beside a
+   42px number, so it now sits above the 1.5rem body size and carries its own
+   line-height instead of inheriting the block default. */
+.rvw__score--count {
+    display: block; font-size: 2rem; font-weight: 600; line-height: 1.3;
+    color: var(--dt-ink); margin-top: .5rem;
+}
+
+.rvw__bars { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.rvw__bar { display: grid; grid-template-columns: 34px minmax(0, 1fr) 26px; align-items: center; gap: .9rem; }
+.rvw__bar--label { display: inline-flex; align-items: center; gap: 3px; font-size: 1.2rem; color: var(--dt-ink-soft); }
+.rvw__bar--label svg { color: #c8961f; }
+.rvw__bar--track { height: 7px; border-radius: 99px; background: rgba(31,27,22,.09); overflow: hidden; }
+.rvw__bar--fill { display: block; height: 100%; border-radius: 99px; background: #c8961f; }
+.rvw__bar--n { font-size: 1.2rem; color: var(--dt-ink-soft); text-align: right; }
+
+/* list */
+.rvw__list { list-style: none; margin: 0 0 2.4rem; padding: 0; }
+.rvw__item { display: flex; gap: 1.4rem; padding: 1.8rem 0; border-bottom: 1px solid var(--dt-line); }
+.rvw__item:first-child { padding-top: 0; }
+.rvw__item:last-child { border-bottom: 0; }
+.rvw__avatar {
+    flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--dt-accent); color: #fff;
+    font-family: var(--font-serif); font-size: 1.9rem; line-height: 1;
+}
+.rvw__body { min-width: 0; flex: 1; }
+.rvw__head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.rvw__who { font-size: 1.45rem; color: var(--dt-ink); font-weight: 600; }
+.rvw__when { font-size: 1.2rem; color: var(--dt-ink-soft); }
+.rvw__stars--sm { margin: .4rem 0 .6rem; }
+.rvw__title { font-family: var(--font-serif); font-size: 1.75rem; margin: 0 0 .4rem; color: var(--dt-ink); }
+.rvw__text { font-size: 1.42rem !important; line-height: 1.75; color: var(--dt-ink-soft); margin: 0; }
+
+/* empty state */
+.rvw__empty {
+    text-align: center; padding: 3.4rem 2rem; margin-bottom: 2.4rem;
+    border: 1px dashed var(--dt-line); border-radius: var(--dt-radius); color: var(--dt-ink-soft);
+}
+.rvw__empty svg { color: var(--dt-line); margin-bottom: .8rem; }
+.rvw__empty p { font-size: 1.6rem !important; color: var(--dt-ink); margin: 0 0 .3rem; }
+.rvw__empty span { font-size: 1.32rem; }
+
+/* write panel */
+.rvw__write { padding: 2.2rem; background: #fff; border: 1px solid var(--dt-line); border-radius: var(--dt-radius); max-width: 640px; }
+.rvw__write--title { font-family: var(--font-serif); font-size: 2rem; margin: 0 0 1.4rem; color: var(--dt-ink); }
+.rvw__write--note { font-size: 1.4rem !important; margin: 0; }
+.rvw__field { margin-bottom: 1.2rem; }
+.rvw__pick { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.rvw__pick--label { font-size: 1.22rem; letter-spacing: 1.4px; text-transform: uppercase; color: var(--dt-ink-soft); font-weight: 600; }
+.rvw__pick--stars { display: inline-flex; gap: 4px; }
+/* script.js toggles .active on .js-star as you hover/click. theme-refresh.css
+   sets fill on the path itself, so match that specificity rather than relying
+   on currentColor, and keep the picker gold like the display stars. */
+.rvw__pick--stars .js-star { cursor: pointer; display: inline-flex; transition: transform .15s; }
+.rvw__pick--stars .js-star:hover { transform: scale(1.12); }
+.rvw__pick--stars .js-star svg path { fill: var(--dt-line); transition: fill .15s; }
+.rvw__pick--stars .js-star.active svg path { fill: #c8961f; }
+
+/* =========================================================================
+   ORDER DETAILS
+   ========================================================================= */
+.odx { padding: 5rem 0; }
+.odx__grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 2.4rem; align-items: start; }
+@media (max-width: 991px) { .odx__grid { grid-template-columns: 1fr; } }
+
+.odx__card {
+    background: var(--dt-surface); border: 1px solid var(--dt-line);
+    border-radius: var(--dt-radius); padding: 2.4rem; margin-bottom: 2.4rem; box-shadow: var(--dt-shadow);
+}
+.odx__card:last-child { margin-bottom: 0; }
+.odx__card h3 {
+    font-family: var(--font-serif); font-size: 2rem; margin: 0 0 1.6rem;
+    padding-bottom: 1.2rem; border-bottom: 1px solid var(--dt-line); color: var(--dt-ink);
+}
+
+/* header */
+.odx__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.6rem; flex-wrap: wrap; }
+.odx__num { font-family: var(--font-jost); font-size: 2.4rem; margin: 0 0 .4rem; color: var(--dt-ink); }
+.odx__placed { margin: 0; font-size: 1.35rem; color: var(--dt-ink-soft); }
+.odx__status {
+    display: inline-flex; align-items: center; gap: 8px; padding: .7rem 1.6rem; border-radius: 999px;
+    font-size: 1.25rem; font-weight: 600; letter-spacing: .8px; text-transform: uppercase;
+}
+.odx__status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.odx__status--pending   { background: #fdf1de; color: #b26a09; }
+.odx__status--confirmed,
+.odx__status--processing { background: #e6edfe; color: #2450c8; }
+.odx__status--shipped   { background: #f0e9fe; color: #6b34d6; }
+.odx__status--delivered { background: #e8f5ee; color: #1e7e4f; }
+.odx__status--cancelled,
+.odx__status--refunded  { background: #fde9e7; color: #b23b30; }
+
+/* timeline */
+.odx__track { display: flex; margin: 2.8rem 0 .6rem; padding: 0; list-style: none; counter-reset: step; }
+.odx__track li { flex: 1; position: relative; text-align: center; font-size: 1.25rem; color: var(--dt-ink-soft); }
+.odx__track li::before {
+    counter-increment: step; content: "";
+    display: block; width: 26px; height: 26px; margin: 0 auto .9rem; border-radius: 50%;
+    background: #fff; border: 2px solid var(--dt-line); position: relative; z-index: 2;
+}
+/* connector */
+.odx__track li::after {
+    content: ""; position: absolute; top: 13px; left: -50%; width: 100%; height: 2px;
+    background: var(--dt-line); z-index: 1;
+}
+.odx__track li:first-child::after { display: none; }
+.odx__track li.is-done { color: var(--dt-ink); font-weight: 600; }
+.odx__track li.is-done::before { background: var(--dt-accent); border-color: var(--dt-accent); }
+.odx__track li.is-done::after { background: var(--dt-accent); }
+.odx__track li.is-current::before { box-shadow: 0 0 0 5px color-mix(in srgb, var(--dt-accent) 20%, transparent); }
+.odx__track--dead { text-align: center; padding: 2rem; background: #fde9e7; color: #b23b30; border-radius: 10px; margin-top: 2rem; font-size: 1.4rem; }
+
+/* items */
+.odx__item { display: flex; gap: 1.6rem; padding: 1.8rem 0; border-bottom: 1px solid var(--dt-line); }
+.odx__item:last-of-type { border-bottom: 0; }
+.odx__item--img {
+    width: 78px; height: 78px; flex-shrink: 0; border-radius: 10px; object-fit: cover;
+    border: 1px solid var(--dt-line); background: var(--dt-wash);
+}
+.odx__item--body { flex: 1; min-width: 0; }
+.odx__item--name { display: block; font-size: 1.55rem; font-weight: 600; color: var(--dt-ink); margin-bottom: .3rem; }
+a.odx__item--name:hover { color: var(--dt-accent); }
+.odx__item--meta { font-size: 1.25rem; color: var(--dt-ink-soft); }
+.odx__item--money { text-align: right; white-space: nowrap; }
+.odx__item--money b { display: block; font-size: 1.55rem; color: var(--dt-ink); }
+.odx__item--money span { font-size: 1.22rem; color: var(--dt-ink-soft); }
+
+/* totals */
+.odx__totals { list-style: none; margin: 1.8rem 0 0; padding: 1.8rem 0 0; border-top: 1px solid var(--dt-line); }
+.odx__totals li { display: flex; justify-content: space-between; gap: 1.6rem; padding: .6rem 0; font-size: 1.45rem; color: var(--dt-ink-soft); }
+.odx__totals li.is-free { color: #1e7e4f; }
+.odx__totals li.is-total {
+    margin-top: .8rem; padding-top: 1.4rem; border-top: 1px solid var(--dt-line);
+    font-family: var(--font-serif); font-size: 2rem; color: var(--dt-ink); font-weight: 600;
+}
+
+/* side panels */
+.odx__side .odx__card { padding: 2rem; }
+.odx__addr { font-size: 1.4rem; line-height: 1.8; color: var(--dt-ink-soft); margin: 0; }
+.odx__addr strong { display: block; color: var(--dt-ink); font-size: 1.5rem; }
+.odx__pay { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: 1.4rem; color: var(--dt-ink-soft); }
+.odx__pay b { color: var(--dt-ink); }
+.odx__btns { display: grid; gap: 1rem; }
+.odx__btn--danger {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 1.8rem; cursor: pointer; width: 100%;
+    background: #fff; color: #b23b30; border: 1px solid #e6b7b2; border-radius: var(--radius, 2px);
+    font-family: var(--font-jost); font-size: 1.22rem; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+    transition: background .2s, color .2s;
+}
+.odx__btn--danger:hover { background: #b23b30; color: #fff; border-color: #b23b30; }
+.odx__help { font-size: 1.32rem; line-height: 1.7; color: var(--dt-ink-soft); margin: 0; }
+.odx__help a { color: var(--dt-accent); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- product details on phones ----
+   Everything above is sized for a two-column desktop layout; under ~576px the
+   single column is ~340px wide, where the 3.2rem price, the 170px-min CTA pair
+   and the 96px spec chips all overflow or wrap into slivers. */
+@media (max-width: 575px) {
+    .pdx { padding: 1.6rem 0 1.2rem; }
+    .pdx__title { font-size: 2.4rem; }
+    .pdx__eyebrow { font-size: 1.05rem; margin-bottom: .7rem; }
+
+    .pdx__pricebox { gap: .6rem 1rem; padding: 1.1rem 0; margin-bottom: 1.1rem; }
+    .pdx__price { font-size: 2.6rem; }
+    .pdx__price--was { font-size: 1.5rem; }
+
+    /* two chips per row instead of one-and-a-bit */
+    .pdx__specs { gap: .6rem; }
+    .pdx__spec { min-width: 0; flex: 1 1 calc(50% - .3rem); padding: .7rem 1rem; }
+
+    /* the CTAs each demanded 170px, so quantity + both buttons never fit on one
+       row and wrapped into slivers. The ~106px stepper still fits beside the
+       primary CTA; Buy Now takes its own full-width row underneath. */
+    .pdx__buy { gap: .8rem; }
+    .pdx__buy .quantity__box { flex: 0 0 auto; }
+    .pdx__buy .primary__btn { flex: 1 1 auto; min-width: 0; }
+    .pdx__buy .pdx__buynow { flex: 1 1 100%; width: 100%; }
+
+    .pdx__actions { gap: 1.2rem 1.8rem; }
+    .pdx__trust { padding: 1.2rem; gap: 1rem; }
+    .pdx__enquiry--box { padding: 1.4rem; }
+
+    .pdx__thumbs .swiper-slide { width: 68px; }
+    .pdx__thumb img { height: 64px; }
+
+    .pdx__tabnav { gap: 1.8rem; margin-bottom: 1.6rem; }
+    .pdx__tabnav li { font-size: 1.6rem; }
+    .pdx__prose { font-size: 1.42rem; line-height: 1.8; }
+    .pdx__spectable { font-size: 1.32rem; }
+    .pdx__spectable th, .pdx__spectable td { padding: .9rem 1rem; }
+    .pdx__spectable th { width: 45%; }
+
+    .pdx__stickybar { padding: .9rem 1.2rem; gap: .9rem; }
+    .pdx__stickybar--price { font-size: 1.7rem; }
+    .pdx__stickybar .primary__btn { padding: 0 1.6rem; min-height: 44px; font-size: 1.15rem; }
+}
+
+/* ---- order details on small screens ----
+   Four timeline columns don't fit under ~576px (the "Delivered" label and the
+   line total were being clipped), so the track turns vertical and the money
+   drops onto its own line. */
+@media (max-width: 575px) {
+    .odx { padding: 3rem 0; }
+    .odx__card { padding: 1.8rem 1.6rem; }
+    .odx__num { font-size: 2rem; overflow-wrap: anywhere; }
+
+    .odx__track { display: grid; gap: 1.6rem; margin-top: 2.2rem; }
+    .odx__track li { display: flex; align-items: center; gap: 1.2rem; text-align: left; }
+    .odx__track li::before { margin: 0; }
+    .odx__track li::after { top: auto; bottom: 100%; left: 12px; width: 2px; height: 1.6rem; }
+
+    .odx__item { flex-wrap: wrap; }
+    .odx__item--money { width: 100%; text-align: left; padding-left: calc(78px + 1.6rem); }
+}
+/* order numbers are one long unbroken token; let the page heading break it
+   rather than push the hero text out of its container on narrow screens */
+@media (max-width: 767px) {
+    .breadcrumb__content--title { overflow-wrap: anywhere; }
+}
+
+/* payment status tone on the order page */
+.odx__pay--ok   { color: #1e7e4f; }
+.odx__pay--warn { color: #9a6b12; }
+.odx__pay--bad  { color: #b23b30; }
+.odx__pay--note { margin: .8rem 0 0; font-size: 1.22rem; line-height: 1.9rem; color: var(--dt-ink-soft); }
+
+/* print: just the order, no site chrome */
+@media print {
+    header, footer, .page__title--area, .odx__side .odx__btns,
+    .quick__contact, .header__sticky--wrapper, .offcanvas__header--menu__open { display: none !important; }
+    .odx__grid { grid-template-columns: 1fr; }
+    .odx__card { box-shadow: none; border-color: #ddd; break-inside: avoid; }
+    body { background: #fff; }
+
+    /* The step markers and the rail between them are drawn with background
+       colours, and printers drop backgrounds by default — so the tracker came
+       out as a row of bare labels. Force the colours through and give every
+       marker an explicit fill so the done steps print as solid circles joined
+       by one continuous line. */
+    .odx__track,
+    .odx__track li,
+    .odx__track li::before,
+    .odx__track li::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .odx__track { break-inside: avoid; }
+    .odx__track li::before {
+        background: #fff !important;
+        border: 2px solid #8a8378 !important;
+    }
+    .odx__track li::after {
+        background: #8a8378 !important;
+        height: 2px !important;
+    }
+    .odx__track li.is-done { color: #000 !important; }
+    .odx__track li.is-done::before {
+        background: #1c1a16 !important;
+        border-color: #1c1a16 !important;
+    }
+    .odx__track li.is-done::after { background: #1c1a16 !important; }
+    /* the halo around the current step is a shadow; printers drop it, and it
+       only duplicates what the filled circle already says */
+    .odx__track li.is-current::before { box-shadow: none !important; }
+}
+
+/* a review the admin turned down — the customer may write another */
+.rvw__write--note__warn { color: #9a6b12; background: #fdf6e6; border-left: 3px solid #d9a441;
+    padding: 1rem 1.2rem; border-radius: 6px; margin-bottom: 1.6rem; font-size: 1.32rem; }

@@ -1,0 +1,156 @@
+/* =========================================================================
+   Shared datepicker (assets/js/datepicker.js)
+   Used by the admin console and the storefront, so every token falls back to
+   a storefront-safe value: --a-gold is the admin's themed primary, and
+   --primary-color is the storefront's. Both come from THEME_PRIMARY.
+   ========================================================================= */
+.dp {
+    position: relative;
+    --dp-accent: var(--a-gold, var(--primary-color, #c19a4b));
+    --dp-accent-2: var(--a-gold-2, var(--primary-color, #a9843b));
+    --dp-tint: var(--a-gold-tint, rgba(193, 154, 75, .12));
+    --dp-surface: var(--surface, #fff);
+    --dp-border: var(--border, #e2ded6);
+    --dp-border-2: var(--border-2, #eee9e1);
+    --dp-text: var(--text, #1f1b16);
+    --dp-muted: var(--text-3, #8a8377);
+    --dp-radius: 14px;
+}
+.dp__input {
+    cursor: pointer; padding-right: 40px !important;
+    background-repeat: no-repeat; background-position: right 12px center;
+    /* recoloured from THEME_PRIMARY at runtime by admin_control_icons_css() */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23c19a4b' stroke-width='2' stroke-linecap='round'%3e%3crect x='3' y='4' width='18' height='18' rx='2'/%3e%3cpath d='M16 2v4M8 2v4M3 10h18'/%3e%3c/svg%3e");
+}
+.dp__input:hover { border-color: var(--dp-accent); }
+
+/* The wrapper only becomes a stacking context while the calendar is open, so
+   it floats over sibling form fields (the storefront grid paints them later). */
+.dp:has(> .dp__pop:not([hidden])) { z-index: 900; }
+.dp__pop {
+    position: absolute; z-index: 900; top: calc(100% + 6px); left: 0; width: 300px;
+    background: var(--dp-surface); border: 1px solid var(--dp-border);
+    border-radius: var(--dp-radius); padding: 16px;
+    box-shadow: var(--shadow-lg, 0 24px 60px -18px rgba(20, 16, 10, .3));
+    animation: dpPop .14s cubic-bezier(.22, .61, .36, 1);
+    text-align: left;
+    /* Fixed px sizes below (not rem): the storefront sets html{font-size:62.5%}
+       so 1rem there is 10px vs. the admin panel's default 16px — rem values
+       rendered ~40% smaller on the storefront. px keeps both consistent.
+       Own font stack too, so a thin/decorative host font (e.g. the
+       storefront's Jost body font) never makes the day numbers hard to read. */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+@keyframes dpPop { from { opacity: 0; transform: translateY(-8px) scale(.985); } }
+
+.dp__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.dp__title { font-weight: 700; font-size: 15px; color: var(--dp-text); }
+.dp__nav {
+    width: 30px; height: 30px; border: 1px solid transparent; background: transparent;
+    border-radius: 8px; cursor: pointer; font-size: 18px; line-height: 1; color: var(--dp-muted);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .14s, color .14s, border-color .14s;
+}
+.dp__nav:hover { background: var(--dp-tint); border-color: var(--dp-accent); color: var(--dp-accent); }
+
+.dp__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dp__dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--dp-muted); padding: 4px 0; text-transform: uppercase; letter-spacing: .5px; }
+.dp__day {
+    border: 0; background: transparent; cursor: pointer; border-radius: 8px;
+    height: 37px; font-size: 15px; font-weight: 500; color: var(--dp-text); font-family: inherit;
+    transition: background .12s, color .12s, box-shadow .12s;
+}
+.dp__day:hover:not(:disabled) { background: var(--dp-tint); color: var(--dp-accent-2); }
+.dp__day:disabled { color: var(--dp-muted); opacity: .4; cursor: default; }
+.dp__day.is-today { box-shadow: inset 0 0 0 1.5px var(--dp-accent); color: var(--dp-accent-2); font-weight: 700; }
+.dp__day.is-selected {
+    background: var(--dp-accent); color: #fff; font-weight: 700;
+    box-shadow: 0 4px 10px -4px var(--dp-accent);
+}
+.dp__day:focus-visible { outline: 2px solid var(--dp-accent); outline-offset: 1px; }
+
+.dp__time { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--dp-border-2); font-size: 13px; }
+.dp__time span { color: var(--dp-muted); font-weight: 600; margin-right: auto; }
+.dp__time select { width: auto !important; min-height: 0; padding: 5px 26px 5px 9px; background-size: 10px; background-position: right 8px center; font-size: 13px; }
+
+.dp__foot { display: flex; gap: 6px; margin-top: 12px; }
+.dp__foot button {
+    flex: 1; border: 1px solid var(--dp-border); background: var(--dp-surface); border-radius: 8px;
+    padding: 8px 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--dp-muted); font-family: inherit;
+    transition: border-color .14s, color .14s, background .14s;
+}
+.dp__foot button:hover { border-color: var(--dp-accent); color: var(--dp-accent); background: var(--dp-tint); }
+.dp__foot .dp__done { background: var(--dp-accent); color: #fff; border-color: var(--dp-accent); }
+.dp__foot .dp__done:hover { background: var(--dp-accent-2); color: #fff; border-color: var(--dp-accent-2); }
+
+/* ---------- month / year dropdowns in the picker head ----------
+   The head used to print "March 2026" as static text, so reaching a distant
+   month meant clicking the arrow once per month. These two selects list every
+   month and every year inside data-min / data-max. */
+.dp__title { display: inline-flex; align-items: center; gap: 6px; }
+.dp__sel {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    border: 1px solid transparent; border-radius: 6px;
+    background: transparent; background-image: none;
+    padding: 3px 20px 3px 6px;
+    font: inherit; font-weight: 700; font-size: 14px; color: var(--dp-text);
+    cursor: pointer; line-height: 1.3; max-width: 9.5em;
+}
+.dp__sel:hover { border-color: var(--dp-line, #e2ddd3); background: var(--dp-tint); }
+.dp__sel:focus { outline: none; border-color: var(--dp-accent); background: var(--dp-tint); }
+.dp__sel option:disabled { color: #b9b3a8; }
+/* the caret: drawn here because the shared select background-image rule in
+   header.php targets .form-select / .main__content_wrapper select only */
+.dp__title { position: relative; }
+.dp__sel {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3e%3cpath d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+}
+
+/* a picker that failed validation gets the same red edge as any other field */
+.dp__input.is-invalid { border-color: #b23b30 !important; }
+
+/* ---------- keep the host page's global select styling out of the head ----
+   The storefront styles every select inside .main__content_wrapper
+   (theme-refresh.css) with width:100%, 3rem of right padding, a ~40px
+   min-height and its own caret. That selector scores (0,0,1,1) and beats a
+   bare .dp__sel (0,0,1,0) whatever the load order, so inside the popup both
+   dropdowns tried to fill the row at once. The head overflowed its 268px of
+   content box, which is why the month read "Septem" and why the ‹ › buttons —
+   the only other things on that flex line able to shrink — collapsed to a
+   sliver, so hovering one showed a stub instead of a 30px button.
+
+   .dp .dp__sel / .dp .dp__nav score (0,0,2,0) and win it back without
+   !important, and the sizes below are absolute (not rem) for the same reason
+   .dp__pop is: the storefront's html{font-size:62.5%} makes 1rem 10px here
+   and 16px in the admin console. */
+.dp .dp__head { gap: 4px; }
+.dp .dp__title { flex: 0 1 auto; min-width: 0; }
+.dp .dp__sel {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 3px 22px 3px 7px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.3;
+    color: var(--dp-text);
+    background-position: right 7px center;
+    background-size: 10px 7px;
+}
+/* the arrows keep their full 30px hit area instead of being squeezed out */
+.dp .dp__nav { flex: 0 0 30px; }
+
+/* The hover wash was a fixed gold rgba() — the picker started life in the
+   gold-themed admin console. On a storefront themed #92224b that painted a
+   gold square behind a maroon arrow. Derive it from the accent instead, so
+   the arrows, the day cells and the Clear / Today buttons all tint in the
+   site's own colour. Wrapped in @supports because an unresolvable custom
+   property does not fall back to the earlier declaration — it would drop the
+   hover background altogether on a browser without color-mix. */
+@supports (background: color-mix(in srgb, red 10%, transparent)) {
+    .dp { --dp-tint: var(--a-gold-tint, color-mix(in srgb, var(--dp-accent) 10%, transparent)); }
+}

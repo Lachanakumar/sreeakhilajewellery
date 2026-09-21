@@ -1,0 +1,340 @@
+/* ===================================================================
+   Payment UI — checkout gateway picker, processing states, return page.
+   Loaded after theme-refresh.css via $pageStyles.
+   =================================================================== */
+
+:root {
+    --pay-line: #e3ded4;
+    --pay-ink: #221d17;
+    --pay-muted: #7d7469;
+    --pay-accent: var(--brand-color, #a67c2e);
+    --pay-ok: #1f6d4a;
+    --pay-err: #b23b30;
+    --pay-warn: #b07d16;
+}
+
+/* ---------- secure badge ---------- */
+.pay__secure {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.2rem;
+    color: var(--pay-ok);
+    background: #f1f7f3;
+    border: 1px solid #cfe6da;
+    border-radius: 8px;
+    padding: 9px 12px;
+    margin-bottom: 16px;
+    line-height: 1.35;
+}
+
+.pay__secure svg { flex-shrink: 0; }
+
+.pay__secure--mode {
+    margin-left: auto;
+    font-size: 1rem;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    background: var(--pay-warn);
+    color: #fff;
+    border-radius: 40px;
+    padding: 2px 9px;
+    font-weight: 600;
+}
+
+/* ---------- gateway list ---------- */
+.pay__gateways { display: grid; gap: 10px; margin-bottom: 6px; }
+
+.pay__gateway {
+    display: block;
+    border: 1px solid var(--pay-line);
+    border-radius: 10px;
+    background: #fff;
+    padding: 0;
+    cursor: pointer;
+    transition: border-color .18s ease, box-shadow .18s ease;
+    margin: 0;
+}
+
+.pay__gateway:hover { border-color: var(--pay-accent); }
+
+.pay__gateway.is-active {
+    border-color: var(--pay-accent);
+    box-shadow: 0 0 0 2px rgba(166, 124, 46, .16);
+}
+
+.pay__gateway--head {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 13px 14px;
+}
+
+.pay__gateway--radio { width: auto !important; margin: 3px 0 0 !important; flex-shrink: 0; }
+
+.pay__gateway--body { flex: 1 1 auto; min-width: 0; }
+
+.pay__gateway--label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--pay-ink);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.pay__gateway--blurb {
+    display: block;
+    font-size: 1.15rem;
+    color: var(--pay-muted);
+    margin-top: 3px;
+    line-height: 1.4;
+}
+
+.pay__gateway--tag {
+    font-size: 1rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    border: 1px solid var(--pay-line);
+    border-radius: 40px;
+    padding: 1px 8px;
+    color: var(--pay-muted);
+    font-weight: 600;
+}
+
+/* ---------- method sub-list (revealed for the active gateway) ---------- */
+.pay__methods {
+    display: none;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 14px 13px 47px;
+    border-top: 1px dashed var(--pay-line);
+    margin-top: -1px;
+    padding-top: 12px;
+}
+
+.pay__gateway.is-active .pay__methods { display: flex; }
+
+.pay__method {
+    margin: 0;
+    cursor: pointer;
+}
+
+.pay__method input { position: absolute; opacity: 0; pointer-events: none; }
+
+.pay__method span {
+    display: inline-block;
+    border: 1px solid var(--pay-line);
+    border-radius: 40px;
+    padding: 6px 14px;
+    font-size: 1.2rem;
+    color: var(--pay-ink);
+    background: #fbfaf8;
+    transition: all .16s ease;
+}
+
+.pay__method input:checked + span {
+    border-color: var(--pay-accent);
+    background: var(--pay-accent);
+    color: #fff;
+}
+
+.pay__method input:focus-visible + span { outline: 2px solid var(--pay-accent); outline-offset: 2px; }
+
+/* ---------- submit button + states ---------- */
+.pay__submit {
+    width: 100%;
+    margin-top: 18px;
+    position: relative;
+}
+
+.pay__submit[disabled],
+.pay__submit.is-busy {
+    opacity: .65;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pay__spinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(255, 255, 255, .45);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: pay-spin .7s linear infinite;
+    vertical-align: -2px;
+    margin-right: 8px;
+}
+
+@keyframes pay-spin { to { transform: rotate(360deg); } }
+
+/* ---------- inline alert ---------- */
+.pay__alert {
+    display: none;
+    border-radius: 8px;
+    padding: 11px 13px;
+    font-size: 1.25rem;
+    line-height: 1.45;
+    margin-top: 14px;
+}
+
+.pay__alert.is-shown { display: block; }
+.pay__alert.is-error { background: #fdf1f0; border: 1px solid #f0cdc9; color: var(--pay-err); }
+.pay__alert.is-info { background: #fbf6ea; border: 1px solid #ecdcb6; color: var(--pay-warn); }
+.pay__alert.is-success { background: #f1f7f3; border: 1px solid #cfe6da; color: var(--pay-ok); }
+
+.pay__alert--actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
+
+.pay__alert--actions button {
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    border-radius: 40px;
+    padding: 5px 14px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pay__alert--actions button:hover { background: rgba(0, 0, 0, .05); }
+
+/* ---------- full-screen processing overlay ---------- */
+.pay__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 20, 16, .72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.pay__overlay.is-shown { display: flex; }
+
+.pay__overlay--card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 34px 30px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .3);
+}
+
+.pay__overlay--ring {
+    width: 44px;
+    height: 44px;
+    border: 3px solid #ece5d8;
+    border-top-color: var(--pay-accent);
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    animation: pay-spin .8s linear infinite;
+}
+
+.pay__overlay--title { font-size: 1.7rem; margin: 0 0 6px; color: var(--pay-ink); }
+.pay__overlay--text { font-size: 1.25rem; color: var(--pay-muted); margin: 0; line-height: 1.5; }
+.pay__overlay--note { font-size: 1.1rem; color: var(--pay-muted); margin: 14px 0 0; }
+
+/* ---------- Stripe element host ---------- */
+.pay__stripe {
+    display: none;
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid var(--pay-line);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.pay__stripe.is-shown { display: block; }
+
+.pay__paypal { display: none; margin-top: 14px; }
+.pay__paypal.is-shown { display: block; }
+
+/* ===================================================================
+   Return / status page
+   =================================================================== */
+.payresult__wrap { max-width: 620px; margin: 0 auto; }
+
+.payresult__card {
+    background: #fff;
+    border: 1px solid var(--pay-line);
+    border-radius: 14px;
+    padding: 38px 32px;
+    text-align: center;
+    box-shadow: 0 10px 34px rgba(34, 29, 23, .06);
+}
+
+.payresult__icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+}
+
+.payresult__icon svg { width: 32px; height: 32px; }
+.payresult__icon.is-ok { background: #e7f3ec; color: var(--pay-ok); }
+.payresult__icon.is-err { background: #fdeceb; color: var(--pay-err); }
+.payresult__icon.is-wait { background: #fbf3e2; color: var(--pay-warn); }
+.payresult__icon.is-wait .pay__overlay--ring { margin: 0; width: 32px; height: 32px; border-width: 3px; }
+
+.payresult__title { font-size: 2.2rem; margin: 0 0 10px; color: var(--pay-ink); }
+.payresult__text { font-size: 1.35rem; color: var(--pay-muted); line-height: 1.6; margin: 0 0 6px; }
+
+.payresult__meta {
+    list-style: none;
+    padding: 16px 0 0;
+    margin: 20px 0 0;
+    border-top: 1px solid var(--pay-line);
+    text-align: left;
+}
+
+.payresult__meta li {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    font-size: 1.25rem;
+    padding: 6px 0;
+    color: var(--pay-ink);
+}
+
+.payresult__meta li span:first-child { color: var(--pay-muted); }
+.payresult__meta li span:last-child { font-weight: 600; text-align: right; word-break: break-all; }
+
+.payresult__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.payresult__actions .primary__btn,
+.payresult__actions .pay__ghost--btn { min-width: 165px; text-align: center; }
+
+.pay__ghost--btn {
+    display: inline-block;
+    border: 1px solid var(--pay-line);
+    border-radius: 40px;
+    padding: 12px 26px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--pay-ink);
+    background: #fff;
+    text-decoration: none;
+}
+
+.pay__ghost--btn:hover { border-color: var(--pay-accent); color: var(--pay-accent); }
+
+@media (max-width: 575px) {
+    .payresult__card { padding: 28px 18px; }
+    .pay__methods { padding-left: 14px; }
+    .payresult__actions .primary__btn,
+    .payresult__actions .pay__ghost--btn { width: 100%; }
+}
