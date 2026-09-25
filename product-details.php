@@ -105,12 +105,14 @@ include 'includes/header.php';
                         <?php endif; ?>
                         <h1 class="pdx__title"><?php echo e($product['name']); ?></h1>
 
-                        <div class="pdx__ratingline">
+                        <div class="pdx__ratingline<?php echo $reviewSummary['count'] > 0 ? '' : ' pdx__ratingline--empty'; ?>">
                             <?php echo renderStars($reviewSummary['average']); ?>
                             <?php if ($reviewSummary['count'] > 0): ?>
-                                <a href="#reviews" data-jump-reviews><?php echo (int) $reviewSummary['count']; ?> review<?php echo $reviewSummary['count'] === 1 ? '' : 's'; ?></a>
+                                <a class="pdx__ratingline--count" href="#reviews" data-jump-reviews><?php echo (int) $reviewSummary['count']; ?> Review<?php echo $reviewSummary['count'] === 1 ? '' : 's'; ?></a>
+                                <span class="pdx__ratingline--sep" aria-hidden="true"></span>
+                                <span class="pdx__ratingline--score"><?php echo number_format((float) $reviewSummary['average'], 1); ?> out of 5</span>
                             <?php else: ?>
-                                <a href="#reviews" data-jump-reviews>Be the first to review</a>
+                                <a class="pdx__ratingline--count" href="#reviews" data-jump-reviews>Be the first to review</a>
                             <?php endif; ?>
                         </div>
 

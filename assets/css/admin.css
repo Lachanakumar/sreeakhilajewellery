@@ -561,10 +561,76 @@ img { max-width: 100%; }
 /* A date reads in ~11 characters, so a half-bar-wide box is mostly empty. Capped
    rather than fixed, so the pair still fills the column on a narrow screen. */
 .filterbar__fields .field--date { max-width: 178px; }
+/* From and To are two ends of one range, so they are drawn as one control.
+   Inside the auto-fit columns they were two separate cells, which pushed a
+   ~240px gutter between them and made the pair read as unrelated filters. The
+   wrapper is a single cell; the boxes sit edge to edge with their touching
+   corners squared and their border shared, so what is left is one joined field
+   with two labels. */
+.filterbar__fields .field__daterange { display: flex; align-items: flex-end; }
+.filterbar__fields .field__daterange .field { flex: 0 1 142px; min-width: 0; max-width: 142px; }
+.filterbar__fields .field__daterange .field + .field { margin-left: -1px; }
+.field__daterange .field:first-child input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.field__daterange .field + .field input { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+/* the focused box has to sit over its neighbour, or the shared edge clips the
+   focus ring on whichever side is painted second */
+.field__daterange .field:focus-within { position: relative; z-index: 1; }
 .filterbar__actions { display: flex; gap: 10px; flex-shrink: 0; }
 .field--icon .field__wrap { position: relative; display: block; }
 .field--icon .field__wrap svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
 .field--icon .field__wrap input[type=text] { padding-left: 36px; }
+
+/* ---------------- Reason dialog ---------------- */
+/* Asking why a review is being rejected. A native prompt() could be refused by
+   the browser and could not cap what was typed; this can do both, and it can
+   look like the rest of the console while it is at it. */
+.adlg {
+    width: min(480px, calc(100vw - 32px)); padding: 0; overflow: hidden;
+    border: 1px solid var(--border); border-radius: var(--r);
+    background: var(--surface); color: var(--text);
+    font-family: var(--font); box-shadow: var(--shadow-lg);
+    animation: adlgIn .16s var(--ease);
+}
+.adlg::backdrop {
+    background: rgba(16, 22, 35, .48);
+    backdrop-filter: blur(2px);
+    animation: adlgFade .16s var(--ease);
+}
+@keyframes adlgIn { from { opacity: 0; transform: translateY(-10px) scale(.985); } }
+@keyframes adlgFade { from { opacity: 0; } }
+
+.adlg__head { display: flex; gap: 13px; align-items: flex-start; padding: 22px 22px 0; }
+.adlg__ic {
+    width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--red-bg); color: var(--red);
+}
+:root[data-theme="dark"] .adlg__ic { background: color-mix(in srgb, var(--red) 22%, transparent); }
+.adlg__heading { min-width: 0; }
+.adlg__title { margin: 2px 0 0; font-size: 1.02rem; font-weight: 700; letter-spacing: -.2px; line-height: 1.3; }
+.adlg__sub { margin: 5px 0 0; font-size: .8rem; line-height: 1.5; color: var(--text-2); }
+
+.adlg__body { padding: 16px 22px 0; }
+.adlg__label { display: block; font-weight: 600; margin-bottom: 7px; font-size: .79rem; color: var(--text-2); letter-spacing: .2px; }
+.adlg__input {
+    width: 100%; resize: vertical; min-height: 84px; display: block;
+    padding: 10px 13px; border: 1px solid var(--border); border-radius: var(--r-sm);
+    font: inherit; color: inherit; background: var(--surface);
+    transition: border-color .15s, box-shadow .15s;
+}
+.adlg__input::placeholder { color: var(--text-3); opacity: .75; }
+.adlg__input:focus { outline: none; border-color: var(--a-gold); box-shadow: var(--ring); }
+.adlg__meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: .74rem; color: var(--text-3); }
+.adlg__count { font-variant-numeric: tabular-nums; }
+
+.adlg__foot {
+    display: flex; justify-content: flex-end; gap: 9px;
+    margin-top: 18px; padding: 15px 22px; background: var(--surface-2); border-top: 1px solid var(--border-2);
+}
+@media (max-width: 520px) {
+    .adlg__foot { flex-direction: column-reverse; }
+    .adlg__foot .btn { width: 100%; }
+}
 
 /* ---------------- Segmented status chips ---------------- */
 .chipbar {
@@ -689,7 +755,7 @@ table.admin__table th, table.admin__table td {
 }
 table.admin__table thead th {
     background: var(--surface-2); font-size: .66rem; text-transform: uppercase; letter-spacing: 1.1px;
-    color: var(--text-3); font-weight: 700; position: sticky; top: var(--topbar-h); z-index: 1;
+    color: var(--text-3); font-weight: 700; position: sticky; top: var(--topbar-h); z-index: 0;
 }
 table.admin__table tbody tr { transition: background .12s; }
 table.admin__table tbody tr:hover { background: var(--surface-2); }
@@ -1457,6 +1523,13 @@ body.admin.is-login { background: var(--lg-panel); color: var(--lg-body); min-he
     .admin__topbar { padding: 0 14px; }
     /* one field per row down here — capping them would leave a stranded gap */
     .filterbar__fields .field--date { max-width: none; }
+    /* Two boxes sharing a phone's width cut the date off mid-word, so down here
+       the pair gives up the joined look and takes a row each — the same as the
+       fields did before they were grouped. */
+    .filterbar__fields .field__daterange { display: block; }
+    .filterbar__fields .field__daterange .field { max-width: none; }
+    .filterbar__fields .field__daterange .field + .field { margin-left: 0; margin-top: 14px; }
+    .field__daterange .field input { border-radius: var(--r-sm); }
     .crumbs a, .crumbs svg { display: none; }
     table.admin__table { font-size: .79rem; }
     table.admin__table th, table.admin__table td { padding: 10px 9px; }

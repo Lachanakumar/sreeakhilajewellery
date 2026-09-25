@@ -244,16 +244,21 @@ admin_page_head('Offer Banners', 'Promotional strips and cards across the homepa
                     <?php /* data-min pins the start to today; data-min-input ties the
                              expiry's floor to whatever start is picked, so the pair
                              cannot be put out of order. See assets/js/datepicker.js. */ ?>
+                    <?php /* The placeholder says what the box takes — both of these are
+                             date AND time pickers, which nothing else on the form
+                             mentions. What a blank box means is said once in the section
+                             subtitle and again in the hints below, so repeating it here
+                             left the field itself unexplained. */ ?>
                     <div class="field"><label>Starts</label>
                         <input type="text" data-datepicker="datetime" name="starts_at" data-min="<?php echo date('Y-m-d'); ?>"
                                data-max-input="expires_at" value="<?php echo $dtVal($edit['starts_at'] ?? null); ?>"
-                               placeholder="Leave blank to start now">
-                        <span class="hint">Cannot be in the past.</span></div>
+                               placeholder="Select start date &amp; time">
+                        <span class="hint">Cannot be in the past. Leave blank to start immediately.</span></div>
                     <div class="field"><label>Expires</label>
                         <input type="text" data-datepicker="datetime" name="expires_at" data-min="<?php echo date('Y-m-d'); ?>"
                                data-min-input="starts_at" value="<?php echo $dtVal($edit['expires_at'] ?? null); ?>"
-                               placeholder="Leave blank to run indefinitely">
-                        <span class="hint">Must be after the start. Shows a countdown, then hides itself.</span></div>
+                               placeholder="Select end date &amp; time">
+                        <span class="hint">Must be after the start. Leave blank to run indefinitely; otherwise it shows a countdown, then hides itself.</span></div>
                 </div>
             </div>
         </div>

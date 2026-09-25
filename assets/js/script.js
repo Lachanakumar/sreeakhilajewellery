@@ -696,18 +696,38 @@ newsletterPopup();
     var slideId = params.get("slide");
     if (slideId) {
       var hero = document.querySelector(".hero__slider--activation");
-      var target = hero && hero.querySelector('[data-slide-id="' + CSS.escape(slideId) + '"]');
-      if (hero && hero.swiper && target) {
+      if (hero && hero.swiper) {
+        /* Search the real slides only, and by attribute rather than by taking
+           the first match in the document.
+           A looping Swiper pads the track with clones of the end slides and
+           keeps moving them around as it rotates, so the first element in the
+           DOM carrying an id is often the CLONE of that slide, not the slide.
+           Looking the clone up in the list of real slides returned -1, which
+           skipped both the stop and the jump: the link worked for whichever
+           slides happened not to be cloned to the front and silently did
+           nothing for the rest, leaving autoplay to rotate as usual so the page
+           looked like it had ignored the link. */
         var slides = Array.prototype.slice.call(
           hero.querySelectorAll(".swiper-slide:not(.swiper-slide-duplicate)")
         );
-        var idx = slides.indexOf(target);
+        var idx = -1;
+        for (var i = 0; i < slides.length; i++) {
+          if (slides[i].getAttribute("data-slide-id") === slideId) {
+            idx = i;
+            break;
+          }
+        }
         if (idx > -1) {
-          if (hero.swiper.autoplay && hero.swiper.autoplay.running) {
-            hero.swiper.autoplay.stop(); // otherwise it rotates away immediately
+          /* Stop unconditionally. The old guard only stopped autoplay when it
+             reported itself as running, and a pass where that flag had not been
+             set yet left the carousel rotating off the slide a moment later. */
+          if (hero.swiper.autoplay && hero.swiper.autoplay.stop) {
+            hero.swiper.autoplay.stop();
           }
           hero.swiper.slideToLoop(idx, 0);
         }
+        // scroll to the hero either way: an inactive slide is not on the page
+        // at all, and the top of the homepage is still the right place to land
         reveal(hero);
       }
     }

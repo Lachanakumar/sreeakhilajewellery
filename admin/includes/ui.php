@@ -290,9 +290,19 @@ function admin_check_row($id, $formId = 'bulkForm') {
     return '<td class="col-chk"><input type="checkbox" class="chk" name="ids[]" value="' . (int) $id . '" form="' . e($formId) . '" aria-label="Select row"></td>';
 }
 
-/** 44px rounded row thumbnail; $src is web-relative to the site root. */
-function admin_thumb($src, $alt = '') {
+/**
+ * 44px rounded row thumbnail; $src is web-relative to the site root.
+ *
+ * $fallback lets a list name the image the STOREFRONT would show in the same
+ * situation — the product list passes product_placeholder_image(), so a product
+ * with no picture looks the same to the admin as it does to the customer.
+ * Lists with no storefront counterpart leave it out and keep the box icon.
+ */
+function admin_thumb($src, $alt = '', $fallback = null) {
     $src = trim((string) $src);
+    if ($src === '' || !is_file(__DIR__ . '/../../' . $src)) {
+        $src = trim((string) $fallback);
+    }
     if ($src === '' || !is_file(__DIR__ . '/../../' . $src)) {
         return '<span class="thumb thumb--empty">' . admin_ui_icon('box', 16) . '</span>';
     }

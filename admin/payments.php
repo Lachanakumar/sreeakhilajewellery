@@ -40,9 +40,9 @@ if ($q !== '') {
 }
 
 /* refund_open counts refunds the gateway has accepted but not yet settled.
-   Those leave payments.status on 'paid' (the money is genuinely still with us),
-   so without this the list showed a refunded payment as a plain "Paid" row with
-   nothing to say a refund was in flight. */
+   The payment already reads Refunded — that is what the customer is told the
+   moment the gateway accepts — so this is what separates a refund that has
+   landed from one still on its way back to them. */
 $sql = 'SELECT p.*, o.order_number, o.order_status, u.name AS customer, u.email,
                (SELECT COUNT(*) FROM payment_refunds r
                  WHERE r.payment_id = p.id AND r.status IN (\'pending\', \'processing\')) AS refund_open

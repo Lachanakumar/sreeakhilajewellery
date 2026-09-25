@@ -98,6 +98,32 @@ function pay_payment_for_order(int $orderId): ?array
     return $s->fetch() ?: null;
 }
 
+/**
+ * The attempt that actually holds the money — what a refund has to act on.
+ *
+ * An order carries one row per attempt, so a retried checkout leaves cancelled
+ * and failed rows behind the captured one. The latest row is the right target
+ * while a payment is still being made, but a refund must follow the money, and
+ * the two are not always the same row. Falls back to the latest attempt so a
+ * caller with nothing captured still gets a row to report on.
+ */
+function pay_captured_payment_for_order(int $orderId): ?array
+{
+    $s = getDB()->prepare(
+        "SELECT * FROM payments WHERE order_id = ?
+          ORDER BY CASE status
+                       WHEN 'paid'               THEN 3
+                       WHEN 'partially_refunded' THEN 3
+                       WHEN 'refunded'           THEN 2
+                       ELSE 1
+                   END DESC,
+                   id DESC
+          LIMIT 1"
+    );
+    $s->execute([$orderId]);
+    return $s->fetch() ?: null;
+}
+
 function pay_find_by_gateway_payment(string $gateway, string $gwPaymentId): ?array
 {
     $s = getDB()->prepare('SELECT * FROM payments WHERE gateway = ? AND gateway_payment_id = ? LIMIT 1');
@@ -489,7 +515,7 @@ function pay_refund(string $gateway, array $payment, float $amount, string $reas
    Refund bookkeeping
    ================================================================== */
 
-/** Record a gateway-confirmed refund and move the order/payment along. */
+/** Record a refund the gateway has accepted and move the order/payment along. */
 function pay_record_refund(array $payment, float $amount, string $gatewayRefundId, string $reason, ?int $adminId = null, string $status = 'completed'): void
 {
     $db = getDB();
@@ -503,11 +529,39 @@ function pay_record_refund(array $payment, float $amount, string $gatewayRefundI
         mb_substr($reason, 0, 255), $status, $adminId,
     ]);
 
-    if ($status !== 'completed') {
+    /* What this payment has committed to refunds, read back from the ledger.
+     *
+     * Two things used to go wrong here, and both showed up as the admin panel
+     * and the customer's order disagreeing about the same refund:
+     *
+     * - Only a refund the gateway had already settled ('completed') was acted
+     *   on. Most gateways settle asynchronously — Razorpay's normal-speed
+     *   refunds, PhonePe, and some Stripe/PayPal methods all answer
+     *   'processing' — so the usual case returned here having written nothing.
+     *   The payment stayed 'paid', the order stayed Delivered, and the customer
+     *   went on being shown Paid after the admin had refunded them. Money the
+     *   gateway has accepted is committed, so it counts from that moment; the
+     *   webhook that confirms it later only flips the ledger row's own status.
+     *
+     * - The running total was added to rather than recomputed, so that same
+     *   confirming webhook counted the refund a second time and a full refund
+     *   reported twice the amount as refunded.
+     *
+     * Summing the rows fixes both. The ledger is keyed on (gateway, refund id),
+     * so a repeat delivery updates its row instead of adding one, which makes
+     * this safe to run as many times as the refund reaches us. */
+    $sum = $db->prepare("SELECT COALESCE(SUM(amount), 0) FROM payment_refunds
+                          WHERE payment_id = ? AND status <> 'failed'");
+    $sum->execute([(int) $payment['id']]);
+    $refunded = round((float) $sum->fetchColumn(), 2);
+
+    /* Nothing committed — every refund on this payment failed at the gateway.
+       The order workflow has no way back out of 'refunded', so leave the
+       statuses where they are rather than inventing a reversal. */
+    if ($refunded <= 0) {
         return;
     }
 
-    $refunded = (float) $payment['amount_refunded'] + $amount;
     $full     = $refunded + 0.001 >= (float) $payment['amount'];
     $newState = $full ? 'refunded' : 'partially_refunded';
 

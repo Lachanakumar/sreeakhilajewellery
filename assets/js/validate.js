@@ -205,6 +205,22 @@
             }
         }
 
+        /* data-date-not-after: a date pair that must stay in order.
+           The selector names the OTHER picker's submitted value — after
+           datepicker.js runs, the visible box is a read-only label and the name
+           has moved to a hidden input, so `[name=expires_at]` resolves to the
+           value that will actually be saved. Compared as YYYY-MM-DD strings,
+           which sorts correctly and lets the two be the same day. */
+        var notAfterSel = field.getAttribute('data-date-not-after');
+        if (notAfterSel && field.form) {
+            var laterField = field.form.querySelector(notAfterSel);
+            var laterVal = laterField ? (laterField.dpValue ? laterField.dpValue.value : laterField.value) : '';
+            if (laterVal && value.slice(0, 10) > String(laterVal).slice(0, 10)) {
+                return field.getAttribute('data-date-message')
+                    || 'This date cannot be later than ' + (laterField.getAttribute('data-label') || 'the other date') + '.';
+            }
+        }
+
         // data-lt: this value must stay below another field's (sale vs regular price)
         var ltSel = field.getAttribute('data-lt');
         if (ltSel && field.form) {

@@ -20,7 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'save') {
     } else {
         $name = trim($_POST['name'] ?? '');
         $sku = trim($_POST['sku'] ?? '');
-        $slug = trim($_POST['slug'] ?? '') ?: slugify($name);
+        // an empty box means the slug is ours to choose (and to keep unique)
+        $slugTyped = trim($_POST['slug'] ?? '') !== '';
+        $slug = $slugTyped ? trim($_POST['slug']) : slugify($name);
         $categoryId = (int) ($_POST['category_id'] ?? 0) ?: null;
         $brandId = (int) ($_POST['brand_id'] ?? 0) ?: null;
         $regular = (float) ($_POST['regular_price'] ?? 0);
@@ -41,19 +43,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'save') {
         if ($regular <= 0) $errors[] = 'Regular price must be greater than zero.';
         if ($sale !== null && $sale >= $regular) $errors[] = 'Sale price must be below the regular price.';
 
-        // Unique SKU / slug check. Only compare the parts that were actually
-        // filled in: on a blank form $sku and $slug are both '', which matches
-        // any product stored with an empty one and reports a clash that does not
-        // exist, on top of the "is required" messages.
-        $dupeCols = [];
-        $dupeArgs = [];
-        if ($sku  !== '') { $dupeCols[] = 'sku = ?';  $dupeArgs[] = $sku; }
-        if ($slug !== '') { $dupeCols[] = 'slug = ?'; $dupeArgs[] = $slug; }
-        if ($dupeCols) {
-            $dupeArgs[] = $productId;
-            $dupe = $db->prepare('SELECT id FROM products WHERE (' . implode(' OR ', $dupeCols) . ') AND id <> ?');
-            $dupe->execute($dupeArgs);
-            if ($dupe->fetch()) $errors[] = 'Another product already uses that SKU or slug.';
+        /* SKU and slug are checked apart so a message can name the one that
+         * actually clashed. They used to share a single "Another product
+         * already uses that SKU or slug", which reads as an SKU problem — and
+         * the usual cause was the other half: the slug box is optional, so a
+         * new product named like an existing one produced a slug that was
+         * already taken, and the save was refused over a field the admin had
+         * never filled in. A slug we chose is ours to make unique; only a slug
+         * the admin typed is reported back to them.
+         *
+         * A blank box still skips its own check: on an empty form $sku and
+         * $slug are both '', which matches any product stored with an empty one
+         * and reports a clash that does not exist, on top of the "is required"
+         * messages. */
+        $dupeSku  = $db->prepare('SELECT id FROM products WHERE sku = ? AND id <> ? LIMIT 1');
+        $dupeSlug = $db->prepare('SELECT id FROM products WHERE slug = ? AND id <> ? LIMIT 1');
+
+        if ($sku !== '') {
+            $dupeSku->execute([$sku, $productId]);
+            if ($dupeSku->fetch()) {
+                // sku is compared by the column's own collation, which ignores
+                // case — worth saying, or "SJ-R001" and "sj-r001" look distinct
+                $errors[] = 'Another product already uses the SKU "' . $sku . '" (SKUs are compared ignoring upper/lower case). Give this one a different SKU.';
+            }
+        }
+
+        if ($slug !== '') {
+            if ($slugTyped) {
+                $dupeSlug->execute([$slug, $productId]);
+                if ($dupeSlug->fetch()) {
+                    $errors[] = 'Another product already uses the slug "' . $slug . '". Change it, or clear the box and one will be made from the name.';
+                }
+            } else {
+                $slug = uniqueProductSlug($slug, $productId);
+            }
         }
 
         if (!$errors) {
@@ -138,31 +161,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'save') {
 
             $failed = $attempted - $added;
 
-            admin_ok(($isEdit ? 'Product updated.' : 'Product created.')
-                . ($added ? " $added image" . ($added === 1 ? '' : 's') . ' uploaded.' : ''));
+            /* One verdict, not two that argue with each other.
+             *
+             * A save where an image was turned away used to raise the green
+             * "Product created." and a warning about the image side by side, so
+             * the screen said the upload had worked and had not worked at once.
+             * The product genuinely was saved and the admin still has to be told
+             * so — that is said inside the warning instead, next to what went
+             * wrong, and the success toast is kept for the case where nothing
+             * was rejected. The per-file reasons are already queued above. */
+            $savedWord = $isEdit ? 'Product updated successfully.' : 'Product created successfully.';
 
-            /* Account for images that were picked but rejected. Without this the
-               admin saw "Product created." sitting next to "No images yet — add
-               at least one", which reads as though they forgot to choose a file
-               when in fact the file they chose was turned away. */
             if ($failed > 0) {
-                admin_warn($failed . ' of ' . $attempted . ' image' . ($attempted === 1 ? '' : 's')
-                    . ' could not be added, so the product was saved without '
-                    . ($failed === 1 ? 'it' : 'them') . '. The reason for each one is listed above.');
+                admin_warn($savedWord . ' ' . $failed . ' of ' . $attempted . ' image'
+                    . ($attempted === 1 ? '' : 's') . ' could not be added, so it was saved without '
+                    . ($failed === 1 ? 'it' : 'them') . '. The reason for each one is listed above.'
+                    . ($added ? ' The other ' . $added . ' ' . ($added === 1 ? 'was' : 'were') . ' uploaded.' : ''));
+            } else {
+                admin_ok($savedWord . ($added ? " $added image" . ($added === 1 ? '' : 's') . ' uploaded.' : ''));
             }
 
-            // context the admin would otherwise only notice on the storefront.
-            // Only nudge when nothing was attached at all — a rejected upload
-            // already has its own message and is not the same as forgetting.
-            if (!$isEdit && !$added && $attempted === 0) {
-                admin_warn('No images yet — add at least one so it looks right in the shop.');
-            }
+            /* No nag for an empty stock level or a product saved without a
+               picture. Neither is a failure: a product with nothing in stock is
+               an ordinary thing to enter ahead of a delivery, and a product with
+               no image now falls back to the placeholder in both the admin list
+               and the shop, so there is nothing for the admin to repair. A save
+               that went through says so once and stops talking. Images that were
+               offered and REJECTED still warn above — that is a failure, and a
+               different thing from not choosing one. */
             if ($status === 'draft') {
                 admin_info('Saved as a draft, so it stays hidden from the storefront.');
             } elseif ($status === 'inactive') {
                 admin_info('Status is Inactive, so this product is hidden from the storefront.');
-            } elseif ($stock <= 0) {
-                admin_warn('Stock is 0 — customers will see this product as out of stock.');
             }
 
             /* Every other admin module returns to its list after a save;

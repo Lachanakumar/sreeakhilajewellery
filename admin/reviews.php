@@ -6,6 +6,9 @@ requireAdmin();
 
 $db = getDB();
 
+/** Longest reason the rejection_reason column can hold. */
+const REVIEW_REASON_MAX = 255;
+
 /**
  * Moderate one review.
  *
@@ -18,6 +21,15 @@ $db = getDB();
  * @return bool true when this call is the one that decided it
  */
 function review_moderate(PDO $db, int $id, string $status, ?string $reason = null): bool {
+    /* rejection_reason is VARCHAR(255) and the reason arrives as free text, so
+       a moderator writing two sentences overruns it. On a server with MySQL's
+       default strict sql_mode that is not a truncation but an error — 1406
+       "Data too long" — which surfaced as a crash page after the reason had
+       been typed. The box now caps the input, and this is the backstop for a
+       post that did not come from it. */
+    if ($reason !== null) {
+        $reason = mb_substr($reason, 0, REVIEW_REASON_MAX);
+    }
     $stmt = $db->prepare("UPDATE reviews
                              SET status = ?, rejection_reason = ?, moderated_at = NOW()
                            WHERE id = ? AND status = 'pending'");
@@ -30,6 +42,13 @@ if (admin_post_ok('reviews.php')) {
     $do = $_POST['do'] ?? '';
     $reason = trim((string) ($_POST['reason'] ?? ''));
 
+    /* Every path below writes rejection_reason and moderated_at. A database that
+       predates those columns — one set up before review-moderation.sql existed
+       and never migrated — throws on the first write, and an uncaught PDO error
+       replaced the whole page with a PHP stack trace for both Approve and
+       Reject, single and bulk alike. A moderator cannot act on that; naming the
+       missing migration is something they can hand to whoever deploys. */
+    try {
     if ($do === 'bulk') {
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['ids'] ?? [])))));
         $act = $_POST['bulk_action'] ?? '';
@@ -80,6 +99,14 @@ if (admin_post_ok('reviews.php')) {
         $stmt->rowCount() > 0
             ? admin_ok('Review deleted.')
             : admin_warn('That review no longer exists — nothing was deleted.');
+    }
+    } catch (Throwable $e) {
+        $missingColumn = $e instanceof PDOException && ($e->getCode() === '42S22');
+        admin_err($missingColumn
+            ? 'This database is missing the review moderation columns, so nothing was changed. '
+            . 'Run database/review-moderation.sql against it (it is also part of database/deploy.sql).'
+            : 'That could not be saved — the database refused the change, so nothing was moderated.');
+        error_log('reviews.php moderation failed: ' . $e->getMessage());
     }
     redirect('reviews.php' . admin_qs());
 }

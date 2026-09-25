@@ -392,7 +392,7 @@ function payment_status_label(array $order) {
             'label' => $pay === 'refunded' ? 'Refunded' : 'Cancelled',
             'tone'  => $pay === 'refunded' ? 'warn' : 'bad',
             'note'  => $pay === 'refunded'
-                ? 'The amount has been returned to your original payment method.'
+                ? 'The amount has been returned to your original payment method. Your bank may take a few working days to show it.'
                 : 'No payment was taken for this order.',
         ];
     }
@@ -417,8 +417,11 @@ function payment_status_label(array $order) {
     switch ($pay) {
         case 'paid':       return ['label' => 'Paid', 'tone' => 'ok', 'note' => ''];
         case 'processing': return ['label' => 'In Progress', 'tone' => 'warn', 'note' => 'Your bank is still confirming this payment.'];
-        case 'refunded':   return ['label' => 'Refunded', 'tone' => 'warn', 'note' => ''];
-        case 'partially_refunded': return ['label' => 'Partially refunded', 'tone' => 'warn', 'note' => ''];
+        /* A refund is shown from the moment the gateway accepts it, which is
+           ahead of the money actually landing — say so rather than leaving the
+           customer to wonder why their statement disagrees. */
+        case 'refunded':   return ['label' => 'Refunded', 'tone' => 'warn', 'note' => 'The amount has been returned to your original payment method. Your bank may take a few working days to show it.'];
+        case 'partially_refunded': return ['label' => 'Partially refunded', 'tone' => 'warn', 'note' => 'Part of this order has been refunded to your original payment method.'];
         case 'failed':     return ['label' => 'Payment failed', 'tone' => 'bad', 'note' => 'No money was taken. You can retry the payment below.'];
         case 'cancelled':  return ['label' => 'Payment cancelled', 'tone' => 'bad', 'note' => 'No money was taken. You can retry the payment below.'];
         default:           return ['label' => 'Awaiting payment', 'tone' => 'warn', 'note' => 'We have not received a payment for this order yet.'];

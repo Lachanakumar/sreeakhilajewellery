@@ -274,24 +274,42 @@
     /**
      * Tie one picker's floor / ceiling to another's value. The partner is named
      * by its original `name`, captured before build() moves it to the shadow
-     * input. Picking a From past the current To drags the To along rather than
-     * leaving an impossible range on screen; that write fires `change` on the
-     * To, which re-runs the From's own link, but the two dates are equal by
+     * input.
+     *
+     * By default, picking a From past the current To drags the To along rather
+     * than leaving an impossible range on screen; that write fires `change` on
+     * the To, which re-runs the From's own link, but the two dates are equal by
      * then so neither clamp fires again.
+     *
+     * `data-range-strict` turns the dragging off. A filter bar can move its own
+     * To without anyone minding, but a form where both dates are things the
+     * admin chose and will save should not quietly rewrite one of them — the
+     * expiry they picked would be saved as a date they never chose. With the
+     * attribute the values stand as entered, the calendar still greys out the
+     * impossible days, and validate.js reports the clash on the field
+     * (data-date-not-after) instead.
      */
     function linkRange(input, byName) {
         [['data-min-input', 'data-min'], ['data-max-input', 'data-max']].forEach(function (pair) {
             var partner = byName[input.getAttribute(pair[0])];
             if (!partner) return;
             var isMin = pair[1] === 'data-min';
+            var strict = input.hasAttribute('data-range-strict');
 
             function apply() {
                 var v = (partner.dpValue ? partner.dpValue.value : '').slice(0, 10);
                 v ? input.setAttribute(pair[1], v) : input.removeAttribute(pair[1]);
 
                 var mine = (input.dpValue ? input.dpValue.value : '').slice(0, 10);
-                if (v && mine && (isMin ? mine < v : mine > v)) { input.dpSet(v); }
+                if (!strict && v && mine && (isMin ? mine < v : mine > v)) { input.dpSet(v); }
                 input.dpRefresh();
+
+                /* Nudge the validator so a message raised against the old pair
+                   clears itself once the partner makes the range valid again.
+                   validate.js only recomputes on `input` for a field it has
+                   already flagged, so this cannot raise one out of nowhere and
+                   cannot loop: it changes no value. */
+                if (strict) { input.dispatchEvent(new Event('input', { bubbles: true })); }
             }
             partner.addEventListener('change', apply);
             apply();

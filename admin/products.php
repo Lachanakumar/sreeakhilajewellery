@@ -194,7 +194,7 @@ echo admin_filter_close('products.php');
                 <?php echo admin_check_row($pid); ?>
                 <td>
                     <div class="cell__media">
-                        <?php echo admin_thumb($p['thumb'], $p['name']); ?>
+                        <?php echo admin_thumb($p['thumb'], $p['name'], product_placeholder_image()); ?>
                         <div class="cell__title">
                             <strong><?php echo e($p['name']); ?></strong>
                             <?php if ($p['is_featured']): ?><span class="badge badge--amber">Featured</span><?php endif; ?>

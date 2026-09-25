@@ -813,4 +813,34 @@ ALTER TABLE products
 -- Existing catalogue keeps its current behaviour.
 UPDATE products SET show_on_homepage = 1 WHERE show_on_homepage IS NULL;
 
+-- ===== refund-sync.sql =====
+-- Refund status sync: orders left reporting a pre-refund payment state.
+-- Safe to re-run: the statement is idempotent and only touches orders that are
+-- already marked Refunded.
+
+UPDATE orders
+   SET payment_status = 'refunded'
+ WHERE order_status = 'refunded'
+   AND payment_status <> 'refunded';
+
+-- ===== review-moderation.sql =====
+-- Why a review was rejected, and who decided. deploy.sql creates these two
+-- columns with the reviews table, but a database that predates them only gets
+-- them from here: without them every Approve and Reject in the admin fails on
+-- "Unknown column 'rejection_reason'" and the page dies with it.
+-- Safe to re-run: both ALTERs are guarded by IF NOT EXISTS.
+
+ALTER TABLE reviews
+    ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(255) NULL AFTER status;
+
+ALTER TABLE reviews
+    ADD COLUMN IF NOT EXISTS moderated_at DATETIME NULL AFTER rejection_reason;
+
+-- Reviews decided before the column existed keep their status but have no
+-- timestamp to show; fall back to when the review was posted.
+UPDATE reviews
+   SET moderated_at = created_at
+ WHERE moderated_at IS NULL
+   AND status <> 'pending';
+
 SET FOREIGN_KEY_CHECKS = 1;

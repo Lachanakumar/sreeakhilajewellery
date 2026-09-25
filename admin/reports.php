@@ -87,9 +87,14 @@ admin_page_head('Reports', 'Sales performance across the range you pick.');
 
 echo admin_filter_open();
 ?>
-    <?php /* data-max-input / data-min-input keep the pair in order — see assets/js/datepicker.js */ ?>
-    <div class="field field--date"><label>From</label><input type="text" data-datepicker name="from" data-max-input="to" value="<?php echo e($from); ?>"></div>
-    <div class="field field--date"><label>To</label><input type="text" data-datepicker name="to" data-min-input="from" value="<?php echo e($to); ?>"></div>
+    <?php /* data-max-input / data-min-input keep the pair in order — see assets/js/datepicker.js.
+             The wrapper makes the two boxes one grid cell, so they sit against
+             each other as a single range control instead of being pushed to
+             opposite ends of the bar by the auto-fit columns. */ ?>
+    <div class="field__daterange">
+        <div class="field field--date"><label>From</label><input type="text" data-datepicker name="from" data-max-input="to" value="<?php echo e($from); ?>"></div>
+        <div class="field field--date"><label>To</label><input type="text" data-datepicker name="to" data-min-input="from" value="<?php echo e($to); ?>"></div>
+    </div>
 <?php
 echo admin_filter_close('reports.php');
 echo admin_stat_cards([

@@ -149,15 +149,30 @@ admin_page_head('Coupons', 'Discount codes customers can apply at checkout.');
                 <div class="row2">
                     <?php /* Tied to each other so the expiry can never be set before the
                              start; same day is allowed and means "valid that day".
-                             See assets/js/datepicker.js. */ ?>
+                             See assets/js/datepicker.js.
+
+                             data-range-strict keeps both dates exactly as they were
+                             entered. Without it, choosing a start later than an expiry
+                             already in the box silently moved that expiry to match, so
+                             the coupon was saved with an end date nobody chose and the
+                             admin was never told the range was wrong. Now the pair
+                             stands and data-date-not-after reports it on the field;
+                             admin/coupons.php checks the same rule again on save. */ ?>
                     <div class="field"><label>Starts</label>
                         <input type="text" data-datepicker name="starts_at" data-max-input="expires_at"
+                               data-range-strict data-date-not-after="[name=expires_at]"
+                               data-date-message="The start date cannot be later than the expiry date."
+                               data-label="Start date"
                                value="<?php echo e($edit['starts_at'] ?? ''); ?>" placeholder="Leave blank to start today">
                         <span class="hint">Valid from the start of this day.</span></div>
+                    <?php /* The placeholder names what the box takes; what a blank box
+                             means moves into the hint, where the rest of the rule for
+                             this field already is. */ ?>
                     <div class="field"><label>Expires</label>
                         <input type="text" data-datepicker name="expires_at" data-min-input="starts_at"
-                               value="<?php echo e($edit['expires_at'] ?? ''); ?>" placeholder="Leave blank for no expiry">
-                        <span class="hint">Valid until the end of this day.</span></div>
+                               data-range-strict data-label="Expiry date"
+                               value="<?php echo e($edit['expires_at'] ?? ''); ?>" placeholder="Select expiry date">
+                        <span class="hint">Valid until the end of this day. Leave blank for no expiry.</span></div>
                 </div>
             </div>
         </div>

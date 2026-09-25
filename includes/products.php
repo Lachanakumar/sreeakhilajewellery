@@ -12,8 +12,17 @@ require_once __DIR__ . '/functions.php';
 
 /* ==================== HYDRATION ==================== */
 
+/**
+ * What a product with no image of its own shows instead.
+ *
+ * It used to be ring.jpg out of the theme's catalogue photos — a photograph of
+ * a real ring, standing in for whatever the product actually was, which read as
+ * the product rather than as a gap. A drawn placeholder cannot be mistaken for
+ * the goods. admin_thumb() falls back to this same file, so the admin list and
+ * the storefront show one placeholder between them.
+ */
 function product_placeholder_image() {
-    return 'assets/img/product/items/ring.jpg';
+    return 'assets/img/product/placeholder.svg';
 }
 
 /**
@@ -253,6 +262,38 @@ function getProductBySlug($slug) {
     $stmt->execute([$slug]);
     $row = $stmt->fetch();
     return $row ? hydrate_product($row) : null;
+}
+
+/**
+ * A product slug nobody else is using.
+ *
+ * Only ever applied to a slug the system worked out from the product name. A
+ * slug the admin typed is their choice and a clash on it is theirs to settle;
+ * but the slug box is optional, so when it is left blank the slug is OUR
+ * choice, and refusing the save over it means turning an admin away for a
+ * field they never filled in. "gold-engagement-ring" becomes
+ * "gold-engagement-ring-2", and so on.
+ *
+ * $ignoreId keeps a product from clashing with itself on edit.
+ */
+function uniqueProductSlug($slug, $ignoreId = 0) {
+    $slug = trim((string) $slug);
+    if ($slug === '') {
+        return $slug;
+    }
+    $stmt = getDB()->prepare('SELECT id FROM products WHERE slug = ? AND id <> ? LIMIT 1');
+
+    $candidate = $slug;
+    // The cap is only there so a broken query cannot spin; with the slug column
+    // unique, a free suffix always turns up long before it.
+    for ($n = 2; $n <= 200; $n++) {
+        $stmt->execute([$candidate, (int) $ignoreId]);
+        if (!$stmt->fetch()) {
+            return $candidate;
+        }
+        $candidate = $slug . '-' . $n;
+    }
+    return $slug . '-' . substr(md5(uniqid('', true)), 0, 6);
 }
 
 function incrementProductViews($id) {

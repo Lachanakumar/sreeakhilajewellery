@@ -66,6 +66,11 @@ if (admin_post_ok('order-view.php?id=' . $orderId)) {
                does — a payment_refunds row for the audit trail, payments and
                orders both moved to 'refunded', and the stock returned once via
                updateOrderStatus(). */
+            /* Follow the money, not the clock: an order keeps a row per
+               attempt, so the most recent one can be a cancelled retry sitting
+               behind the capture. A refund may only touch the captured row. */
+            $payment = pay_captured_payment_for_order($orderId) ?: $payment;
+
             if ($payment['status'] === 'refunded') {
                 flash_set('admin_err', 'This payment is already marked refunded.');
             } elseif (!in_array($payment['status'], ['paid', 'partially_refunded'], true)) {

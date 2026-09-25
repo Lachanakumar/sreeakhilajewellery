@@ -36,15 +36,26 @@
     }
 
     /* ---------- upload ---------- */
+    /**
+     * Every file in a batch ends up in exactly one of two counts, and the
+     * closing message is chosen from them. The green "N images uploaded" used
+     * to be raised whenever a single file made it through, so a batch that was
+     * half rejected — or a response that said success without actually carrying
+     * an image — still ended on a success toast sitting next to the failures.
+     * A file only counts as uploaded once the server has come back with the
+     * image it stored.
+     */
     function uploadFiles(files) {
+        var failed = 0;
         var queue = Array.prototype.slice.call(files).filter(function (f) {
-            if (f.type && ALLOWED.indexOf(f.type) === -1) { flash(f.name + ': unsupported type.', false); return false; }
-            if (f.size > MAX) { flash(f.name + ': larger than 5MB.', false); return false; }
+            if (f.type && ALLOWED.indexOf(f.type) === -1) { flash(f.name + ': unsupported type.', 'err'); failed++; return false; }
+            if (f.size > MAX) { flash(f.name + ': larger than 5MB.', 'err'); failed++; return false; }
             return true;
         });
         if (!queue.length) return;
 
         var done = 0;
+        var total = queue.length + failed;
         progress.style.display = 'block';
         bar.style.width = '0%';
 
@@ -53,7 +64,12 @@
         function next() {
             if (!queue.length) {
                 progress.style.display = 'none';
-                if (uploaded) {
+                /* Nothing through at all: each failure has already named its
+                   own file and said why, and a summary would only repeat it. */
+                if (!uploaded) return;
+                if (failed) {
+                    flash(uploaded + ' of ' + total + ' images uploaded — the rest are listed above.', 'warn');
+                } else {
                     flash(uploaded + ' image' + (uploaded === 1 ? '' : 's') + ' uploaded.', 'ok');
                 }
                 return;
@@ -75,18 +91,36 @@
             };
             xhr.onload = function () {
                 done++;
-                var res;
-                try { res = JSON.parse(xhr.responseText); } catch (e) { res = { success: false, message: 'Upload failed.' }; }
-                if (res.success) {
-                    uploaded++;
-                    addThumb(res.data.image);
-                } else {
-                    flash(file.name + ': ' + (res.message || 'upload failed.'), 'err');
+                var res = null;
+                try { res = JSON.parse(xhr.responseText); } catch (e) { res = null; }
+
+                /* A success that carries no image is not a success: PHP can end
+                   a request with a warning printed before the JSON, and a proxy
+                   or a size limit can answer with an HTML page and a 4xx/5xx.
+                   Both used to reach addThumb(), which threw on the missing
+                   payload and left the queue and its progress bar hanging. */
+                var image = res && res.success && res.data ? res.data.image : null;
+
+                if (!image) {
+                    failed++;
+                    flash(file.name + ': ' + ((res && res.message)
+                        || (xhr.status >= 400 ? 'the server refused this upload (' + xhr.status + ').' : 'upload failed.')), 'err');
+                    next();
+                    return;
+                }
+
+                uploaded++;
+                try {
+                    addThumb(image);
+                } catch (e) {
+                    // it is on the server either way — say so rather than claiming a failure
+                    flash(file.name + ' was uploaded but could not be shown. Refresh the page to see it.', 'warn');
                 }
                 next();
             };
             xhr.onerror = function () {
                 done++;
+                failed++;
                 flash('Network problem — ' + file.name + ' was not uploaded.', 'err');
                 next();
             };

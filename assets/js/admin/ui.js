@@ -460,7 +460,95 @@
     /* Rejecting a review has to say why. The reason rides along in a hidden
        field so the action stays a plain form post; this only fills it in.
        data-reason-when limits the ask to one bulk action, so choosing Approve
-       from the same menu is not interrogated. */
+       from the same menu is not interrogated.
+
+       This used to call window.prompt(). Two things were wrong with that. A
+       browser can refuse it — Chrome's "prevent this page from creating
+       additional dialogs" sticks for the rest of the visit, after which every
+       Reject failed with "a reason is required" and no box ever appeared, which
+       is what "the reason option is not available" was. And a prompt cannot cap
+       what is typed, so a moderator writing a couple of sentences overran the
+       255-character column and the save came back as a database error page.
+       An ordinary dialog in the page can do both. */
+    var REASON_MAX = 255;
+
+    /**
+     * Ask for a reason. Calls back with the trimmed text, or with null when the
+     * admin backs out. Falls back to prompt() only where <dialog> is missing.
+     */
+    function askReason(title, confirmLabel, done) {
+        if (!window.HTMLDialogElement || typeof document.createElement('dialog').showModal !== 'function') {
+            var typed = window.prompt(title, '');
+            done(typed === null ? null : typed.trim());
+            return;
+        }
+
+        var dlg = document.createElement('dialog');
+        dlg.className = 'adlg';
+        dlg.setAttribute('aria-labelledby', 'adlgTitle');
+        dlg.innerHTML =
+            '<div class="adlg__head">' +
+            '<span class="adlg__ic" aria-hidden="true">' +
+            '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+            ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M10.3 3.9 1.8 18.4A2 2 0 0 0 3.5 21.4h17A2 2 0 0 0 22.2 18.4L13.7 3.9a2 2 0 0 0-3.4 0z"/>' +
+            '<path d="M12 9v4M12 17h.01"/></svg></span>' +
+            '<div class="adlg__heading">' +
+            '<h2 class="adlg__title" id="adlgTitle"></h2>' +
+            '<p class="adlg__sub">Kept with the review for your own records — the customer is not shown it.</p>' +
+            '</div></div>' +
+            '<div class="adlg__body">' +
+            '<label class="adlg__label" for="adlgReason">Reason</label>' +
+            '<textarea id="adlgReason" class="adlg__input" rows="3" maxlength="' + REASON_MAX + '"' +
+            ' placeholder="Give the reason in a sentence or two"></textarea>' +
+            '<div class="adlg__meta"><span class="adlg__req">Required</span>' +
+            '<span class="adlg__count"></span></div>' +
+            '</div>' +
+            '<div class="adlg__foot">' +
+            '<button type="button" class="btn btn--ghost" data-adlg="cancel">Cancel</button>' +
+            '<button type="button" class="btn btn--danger" data-adlg="ok"></button>' +
+            '</div>';
+        dlg.querySelector('.adlg__title').textContent = title;
+        dlg.querySelector('[data-adlg=ok]').textContent = confirmLabel;
+
+        var box = dlg.querySelector('.adlg__input');
+        var count = dlg.querySelector('.adlg__count');
+        function tally() { count.textContent = box.value.length + ' / ' + REASON_MAX; }
+        box.addEventListener('input', tally);
+        tally();
+
+        /* Settle from whichever handler gets there first and never from the
+           `close` event alone: closing a <dialog> queues that event rather than
+           firing it inline, and there are builds where it does not arrive at
+           all — the box would shut with the caller still waiting. The flag
+           makes a late `close` a no-op. */
+        var settled = false;
+        function finish(v) {
+            if (settled) { return; }
+            settled = true;
+            if (dlg.open) { try { dlg.close(); } catch (e) { /* already closing */ } }
+            dlg.remove();
+            done(v);
+        }
+
+        dlg.querySelector('[data-adlg=ok]').addEventListener('click', function () {
+            if (box.value.trim() === '') { box.focus(); return; }   // nothing to confirm yet
+            finish(box.value.trim());
+        });
+        dlg.querySelector('[data-adlg=cancel]').addEventListener('click', function () { finish(null); });
+        // Enter confirms, Shift+Enter keeps its newline
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); dlg.querySelector('[data-adlg=ok]').click(); }
+        });
+        // Esc, the backdrop, anything else that shuts it: treated as backing out
+        dlg.addEventListener('cancel', function () { finish(null); });
+        dlg.addEventListener('close', function () { finish(null); });
+
+        document.body.appendChild(dlg);
+        dlg.showModal();
+        box.focus();
+    }
+
     $$('[data-reason-prompt]').forEach(function (form) {
         var field = form.querySelector('input[name="reason"]');
         if (!field) { return; }
@@ -476,13 +564,19 @@
             }
             if (field.value.trim() !== '') { return; }
 
-            var answer = window.prompt(form.getAttribute('data-reason-prompt'), '');
-            if (answer === null || answer.trim() === '') {
-                ev.preventDefault();
-                toast('A reason is required — nothing was changed.', 'err');
-                return;
-            }
-            field.value = answer.trim();
+            /* The dialog cannot answer within this handler, so this submit is
+               always stopped and re-raised once a reason is in the field. */
+            ev.preventDefault();
+            askReason(form.getAttribute('data-reason-prompt'),
+                      form.getAttribute('data-reason-confirm') || 'Reject', function (answer) {
+                if (answer === null || answer === '') {
+                    toast('A reason is required — nothing was changed.', 'err');
+                    return;
+                }
+                field.value = answer.slice(0, REASON_MAX);
+                if (typeof form.requestSubmit === 'function') { form.requestSubmit(); }
+                else { form.submit(); }
+            });
         });
     });
 
@@ -506,8 +600,15 @@
 
     // Validate first, then guard against double submits. This runs at form
     // level, before validate.js's document listener, so a blocked submit never
-    // locks the button — and the summary toast still fires (validate.js calls
-    // stopImmediatePropagation, which would silence a document listener here).
+    // locks the button.
+    //
+    // Nothing is toasted when validation blocks a submit. validate.js writes a
+    // message under every field it rejects and the first one is focused and
+    // scrolled to, so a banner in the corner only repeated what the form was
+    // already saying — and on a form submitted blank, where every field is
+    // flagged at once, it was pure noise on top of a screen full of messages.
+    // Failures the admin cannot see on the field itself still come back from
+    // the server as a flash, which is a different path.
     $$('form').forEach(function (f) {
         f.addEventListener('submit', function (ev) {
             if (f.hasAttribute('data-validate') && window.formValidate) {
@@ -516,7 +617,6 @@
                     ev.preventDefault();
                     try { bad.focus({ preventScroll: true }); } catch (e) { bad.focus(); }
                     bad.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                    toast('Please fix the highlighted fields.', 'err');
                     return;
                 }
             }

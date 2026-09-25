@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="No product image">
+  <title>No product image</title>
+  <style>
+    /* The caption is a smudge on a list thumbnail, where the ring alone already
+       says "nothing here". Rendered through an img element the media query sees
+       the size the image is drawn at, and a browser that ignores it simply
+       keeps the text. Keep angle brackets out of this file: it is parsed as
+       XML, so a stray one here stops the whole image rendering. */
+    @media (max-width: 90px) { .cap { display: none } }
+  </style>
+  <rect width="400" height="400" fill="#f4efe7"/>
+  <g fill="none" stroke="#c9bda8" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <!-- a solitaire ring: reads as jewellery at thumbnail size and as a drawing
+         rather than a photograph at full size, so it cannot be mistaken for the
+         product itself -->
+    <circle cx="200" cy="243" r="72"/>
+    <path d="M200 171 165 133h70z"/>
+    <path d="M165 133 200 96l35 37"/>
+    <path d="M200 96 200 171"/>
+  </g>
+  <text class="cap" x="200" y="356" text-anchor="middle"
+        font-family="Jost, Segoe UI, Helvetica, Arial, sans-serif"
+        font-size="26" letter-spacing="2.5" fill="#a3957f">NO IMAGE</text>
+</svg>
