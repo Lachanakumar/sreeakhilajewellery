@@ -621,7 +621,12 @@ img { max-width: 100%; }
 .adlg__input::placeholder { color: var(--text-3); opacity: .75; }
 .adlg__input:focus { outline: none; border-color: var(--a-gold); box-shadow: var(--ring); }
 .adlg__meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: .74rem; color: var(--text-3); }
-.adlg__count { font-variant-numeric: tabular-nums; }
+.adlg__count { font-variant-numeric: tabular-nums; margin-left: auto; }
+.adlg__label .req { color: var(--red); font-weight: 700; }
+/* the reason error sits right under the textarea in red; .field__error's
+   display:flex would otherwise override the hidden attribute */
+.adlg__error { margin-top: 7px; color: var(--red); font-weight: 600; }
+.adlg__error[hidden] { display: none; }
 
 .adlg__foot {
     display: flex; justify-content: flex-end; gap: 9px;

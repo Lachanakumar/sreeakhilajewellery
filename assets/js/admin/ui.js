@@ -498,11 +498,13 @@
             '<p class="adlg__sub">Kept with the review for your own records — the customer is not shown it.</p>' +
             '</div></div>' +
             '<div class="adlg__body">' +
-            '<label class="adlg__label" for="adlgReason">Reason</label>' +
+            '<label class="adlg__label" for="adlgReason">Reason <span class="req" aria-hidden="true">*</span></label>' +
             '<textarea id="adlgReason" class="adlg__input" rows="3" maxlength="' + REASON_MAX + '"' +
+            ' aria-required="true" aria-describedby="adlgReasonErr"' +
             ' placeholder="Give the reason in a sentence or two"></textarea>' +
-            '<div class="adlg__meta"><span class="adlg__req">Required</span>' +
-            '<span class="adlg__count"></span></div>' +
+            // red message right under the box, shown only when Reject is pressed with it blank
+            '<div class="adlg__error field__error" id="adlgReasonErr" role="alert" hidden></div>' +
+            '<div class="adlg__meta"><span class="adlg__count"></span></div>' +
             '</div>' +
             '<div class="adlg__foot">' +
             '<button type="button" class="btn btn--ghost" data-adlg="cancel">Cancel</button>' +
@@ -513,8 +515,18 @@
 
         var box = dlg.querySelector('.adlg__input');
         var count = dlg.querySelector('.adlg__count');
+        var err = dlg.querySelector('#adlgReasonErr');
         function tally() { count.textContent = box.value.length + ' / ' + REASON_MAX; }
-        box.addEventListener('input', tally);
+        function showError(msg) {
+            err.textContent = msg;
+            err.hidden = !msg;
+            box.classList.toggle('is-invalid', !!msg);
+            box.setAttribute('aria-invalid', msg ? 'true' : 'false');
+        }
+        box.addEventListener('input', function () {
+            tally();
+            if (box.value.trim() !== '') { showError(''); }
+        });
         tally();
 
         /* Settle from whichever handler gets there first and never from the
@@ -532,7 +544,11 @@
         }
 
         dlg.querySelector('[data-adlg=ok]').addEventListener('click', function () {
-            if (box.value.trim() === '') { box.focus(); return; }   // nothing to confirm yet
+            if (box.value.trim() === '') {                          // nothing to confirm yet
+                showError('Reason is required. Please enter why you are rejecting this.');
+                box.focus();
+                return;
+            }
             finish(box.value.trim());
         });
         dlg.querySelector('[data-adlg=cancel]').addEventListener('click', function () { finish(null); });
@@ -569,7 +585,10 @@
             ev.preventDefault();
             askReason(form.getAttribute('data-reason-prompt'),
                       form.getAttribute('data-reason-confirm') || 'Reject', function (answer) {
-                if (answer === null || answer === '') {
+                // Cancel / Esc / backdrop: the admin chose to back out, so no error
+                if (answer === null) { return; }
+                // only the prompt() fallback can hand back a blank reason
+                if (answer === '') {
                     toast('A reason is required — nothing was changed.', 'err');
                     return;
                 }

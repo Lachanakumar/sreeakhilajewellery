@@ -40,29 +40,74 @@ function saveRate($metal, $label, $rate, $date, $unit = 'gram') {
 
 /* ==================== VISIT COUNTER ==================== */
 
+/** Crawlers, uptime monitors and link previewers are not visitors. */
+function visit_is_bot() {
+    $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    if ($ua === '') {
+        return true;
+    }
+    return (bool) preg_match(
+        '~bot|crawl|spider|slurp|mediapartners|facebookexternalhit|whatsapp|telegram|preview|'
+        . 'monitor|pingdom|uptime|lighthouse|headless|phantom|curl|wget|python|java/|okhttp|go-http|httpclient~i',
+        $ua
+    );
+}
+
 /**
- * Count one visit per browser session per day. Returns the running total.
+ * Count each visitor once per day.
+ *
+ * This used to be keyed on the PHP session alone, which over-counted: the
+ * session is replaced on login and logout and expires after a few idle hours,
+ * and every crawler request without a cookie started a fresh one — so one
+ * person browsing through the day could be counted several times. A cookie
+ * that lives until midnight now marks the visitor as counted for the day,
+ * with the session flag kept as a fallback for browsers that refuse it.
  */
 function record_visit() {
-    if (empty($_SESSION['visit_counted_on']) || $_SESSION['visit_counted_on'] !== date('Y-m-d')) {
-        try {
-            getDB()->prepare(
-                'INSERT INTO site_visits (visit_date, hits) VALUES (CURDATE(), 1)
-                 ON DUPLICATE KEY UPDATE hits = hits + 1'
-            )->execute();
-            $_SESSION['visit_counted_on'] = date('Y-m-d');
-        } catch (Throwable $e) {
-            // ignore
-        }
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET' || visit_is_bot()) {
+        return;
+    }
+    // browser prefetch/prerender is not a page the visitor actually opened
+    $purpose = strtolower((string) ($_SERVER['HTTP_SEC_PURPOSE'] ?? $_SERVER['HTTP_PURPOSE'] ?? $_SERVER['HTTP_X_MOZ'] ?? ''));
+    if (strpos($purpose, 'prefetch') !== false) {
+        return;
+    }
+
+    $today = date('Y-m-d');
+    if (($_COOKIE['sv_day'] ?? '') === $today || ($_SESSION['visit_counted_on'] ?? '') === $today) {
+        return;
+    }
+
+    try {
+        getDB()->prepare(
+            'INSERT INTO site_visits (visit_date, hits) VALUES (?, 1)
+             ON DUPLICATE KEY UPDATE hits = hits + 1'
+        )->execute([$today]);
+    } catch (Throwable $e) {
+        return;
+    }
+
+    $_SESSION['visit_counted_on'] = $today;
+    if (!headers_sent()) {
+        setcookie('sv_day', $today, [
+            'expires'  => strtotime('tomorrow'),
+            'path'     => '/',
+            'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 }
 
 function visit_totals() {
     try {
         $db = getDB();
+        // today by the app's clock, the same one record_visit() writes with
+        $today = $db->prepare('SELECT COALESCE(SUM(hits),0) FROM site_visits WHERE visit_date = ?');
+        $today->execute([date('Y-m-d')]);
         return [
             'total' => (int) $db->query('SELECT COALESCE(SUM(hits),0) FROM site_visits')->fetchColumn(),
-            'today' => (int) $db->query('SELECT COALESCE(hits,0) FROM site_visits WHERE visit_date = CURDATE()')->fetchColumn(),
+            'today' => (int) $today->fetchColumn(),
         ];
     } catch (Throwable $e) {
         return ['total' => 0, 'today' => 0];

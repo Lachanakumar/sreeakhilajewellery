@@ -14,6 +14,14 @@ if ($isEdit && !$product) {
 $errors = [];
 $expired = false;
 
+/* Images larger in total than post_max_size make PHP throw the whole request
+   away — $_POST and $_FILES arrive empty, so nothing below ran and the form
+   simply came back blank with no word about why. */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$_POST && !$_FILES && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    $errors[] = 'The selected images are too large to upload together (the server accepts up to '
+        . ini_get('post_max_size') . ' per save). Nothing was saved — choose fewer or smaller images and try again.';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'save') {
     if (!csrf_verify()) {
         $expired = true;
@@ -79,135 +87,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['do'] ?? '') === 'save') {
             }
         }
 
+        /* Check every picked image BEFORE anything is written. The product used
+           to be created first and its images tried afterwards, so a rejected
+           image still left a new product behind with no picture — with a
+           warning saying so, which read as "failed" and "saved" at once. Now a
+           rejected image stops the whole save, and so does a product that would
+           end up with no image at all. */
+        $pendingImages = [];
+        foreach ((array) ($_FILES['images']['name'] ?? []) as $i => $origName) {
+            if (($_FILES['images']['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            $one = [
+                'name'     => $origName,
+                'type'     => $_FILES['images']['type'][$i],
+                'tmp_name' => $_FILES['images']['tmp_name'][$i],
+                'error'    => $_FILES['images']['error'][$i],
+                'size'     => $_FILES['images']['size'][$i],
+            ];
+            [$ok, $extOrMsg] = validate_uploaded_image($one);
+            if (!$ok) {
+                $errors[] = 'Image "' . $origName . '" was not accepted: ' . $extOrMsg;
+                continue;
+            }
+            $pendingImages[] = ['file' => $one, 'ext' => $extOrMsg];
+        }
+        $hasSavedImages = $isEdit && getProductImages($productId);
+        if (!$pendingImages && !$hasSavedImages && !$errors) {
+            $errors[] = 'Add at least one product image (JPG, PNG or WEBP, up to 5MB).';
+        }
+
         if (!$errors) {
-            if ($isEdit) {
-                $db->prepare('UPDATE products SET category_id=?, brand_id=?, name=?, slug=?, sku=?, short_description=?, description=?, specifications=?, regular_price=?, sale_price=?, stock_quantity=?, weight=?, purity=?, making_charge=?, status=?, is_featured=?, show_on_homepage=? WHERE id=?')
-                   ->execute([$categoryId, $brandId, $name, $slug, $sku, $shortDesc ?: null, $desc ?: null, $specs ?: null, $regular, $sale, $stock, $weight ?: null, $purity ?: null, $making, $status, $featured, $onHome, $productId]);
-            } else {
-                $db->prepare('INSERT INTO products (category_id, brand_id, name, slug, sku, short_description, description, specifications, regular_price, sale_price, stock_quantity, weight, purity, making_charge, status, is_featured, show_on_homepage) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-                   ->execute([$categoryId, $brandId, $name, $slug, $sku, $shortDesc ?: null, $desc ?: null, $specs ?: null, $regular, $sale, $stock, $weight ?: null, $purity ?: null, $making, $status, $featured, $onHome]);
-                $productId = (int) $db->lastInsertId();
-            }
-
-            // Variants: arrays name[], value[], adjust[], vstock[], suffix[], vid[]
-            $vNames = $_POST['v_name'] ?? [];
-            $keepIds = [];
-            foreach ($vNames as $i => $vn) {
-                $vn = trim($vn);
-                $vv = trim($_POST['v_value'][$i] ?? '');
-                if ($vn === '' || $vv === '') continue;
-                $adjust = (float) ($_POST['v_adjust'][$i] ?? 0);
-                $vstock = (int) ($_POST['v_stock'][$i] ?? 0);
-                $suffix = trim($_POST['v_suffix'][$i] ?? '');
-                $vid = (int) ($_POST['v_id'][$i] ?? 0);
-                if ($vid) {
-                    $db->prepare('UPDATE product_variants SET variant_name=?, variant_value=?, price_adjustment=?, stock_quantity=?, sku_suffix=? WHERE id=? AND product_id=?')
-                       ->execute([$vn, $vv, $adjust, $vstock, $suffix ?: null, $vid, $productId]);
-                    $keepIds[] = $vid;
-                } else {
-                    $db->prepare('INSERT INTO product_variants (product_id, variant_name, variant_value, price_adjustment, stock_quantity, sku_suffix) VALUES (?,?,?,?,?,?)')
-                       ->execute([$productId, $vn, $vv, $adjust, $vstock, $suffix ?: null]);
-                    $keepIds[] = (int) $db->lastInsertId();
-                }
-            }
-            // Delete removed variants
-            $existing = getProductVariants($productId);
-            foreach ($existing as $ev) {
-                if (!in_array((int) $ev['id'], $keepIds, true)) {
-                    $db->prepare('DELETE FROM product_variants WHERE id = ?')->execute([(int) $ev['id']]);
-                }
-            }
-
-            // Images chosen before the product existed are posted with the form
-            // and attached here; already-saved products also use the AJAX manager.
+            $db->beginTransaction();
+            $storedFiles = [];
             $added = 0;
-            $attempted = 0;   // files the admin actually picked
-            $imageProblem = false;
-            if (!empty($_FILES['images']['name'][0])) {
-                $dir = __DIR__ . '/../uploads/products/';
-                if (!is_dir($dir)) { @mkdir($dir, 0755, true); }
-                $existingCount = count(getProductImages($productId));
-                foreach ($_FILES['images']['name'] as $i => $origName) {
-                    if (($_FILES['images']['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-                        continue;
-                    }
-                    $attempted++;
-                    $one = [
-                        'name'     => $origName,
-                        'type'     => $_FILES['images']['type'][$i],
-                        'tmp_name' => $_FILES['images']['tmp_name'][$i],
-                        'error'    => $_FILES['images']['error'][$i],
-                        'size'     => $_FILES['images']['size'][$i],
-                    ];
-                    // admin_err() queues a list; flash_set() would keep only the
-                    // last message when several images fail.
-                    [$ok, $extOrMsg] = validate_uploaded_image($one);
-                    if (!$ok) {
-                        admin_err($origName . ': ' . $extOrMsg);
-                        $imageProblem = true;
-                        continue;
-                    }
-                    $fname = unique_filename($extOrMsg);
-                    if (!move_uploaded_file($one['tmp_name'], $dir . $fname)) {
-                        admin_err('Could not store ' . $origName . '.');
-                        $imageProblem = true;
-                        continue;
-                    }
-                    $db->prepare('INSERT INTO product_images (product_id, image_path, is_primary, sort_order) VALUES (?,?,?,?)')
-                       ->execute([$productId, 'uploads/products/' . $fname, ($existingCount + $added) === 0 ? 1 : 0, $existingCount + $added]);
-                    $added++;
+            try {
+                if ($isEdit) {
+                    $db->prepare('UPDATE products SET category_id=?, brand_id=?, name=?, slug=?, sku=?, short_description=?, description=?, specifications=?, regular_price=?, sale_price=?, stock_quantity=?, weight=?, purity=?, making_charge=?, status=?, is_featured=?, show_on_homepage=? WHERE id=?')
+                       ->execute([$categoryId, $brandId, $name, $slug, $sku, $shortDesc ?: null, $desc ?: null, $specs ?: null, $regular, $sale, $stock, $weight ?: null, $purity ?: null, $making, $status, $featured, $onHome, $productId]);
+                } else {
+                    $db->prepare('INSERT INTO products (category_id, brand_id, name, slug, sku, short_description, description, specifications, regular_price, sale_price, stock_quantity, weight, purity, making_charge, status, is_featured, show_on_homepage) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+                       ->execute([$categoryId, $brandId, $name, $slug, $sku, $shortDesc ?: null, $desc ?: null, $specs ?: null, $regular, $sale, $stock, $weight ?: null, $purity ?: null, $making, $status, $featured, $onHome]);
+                    $productId = (int) $db->lastInsertId();
                 }
+
+                // Variants: arrays name[], value[], adjust[], vstock[], suffix[], vid[]
+                $vNames = $_POST['v_name'] ?? [];
+                $keepIds = [];
+                foreach ($vNames as $i => $vn) {
+                    $vn = trim($vn);
+                    $vv = trim($_POST['v_value'][$i] ?? '');
+                    if ($vn === '' || $vv === '') continue;
+                    $adjust = (float) ($_POST['v_adjust'][$i] ?? 0);
+                    $vstock = (int) ($_POST['v_stock'][$i] ?? 0);
+                    $suffix = trim($_POST['v_suffix'][$i] ?? '');
+                    $vid = (int) ($_POST['v_id'][$i] ?? 0);
+                    if ($vid) {
+                        $db->prepare('UPDATE product_variants SET variant_name=?, variant_value=?, price_adjustment=?, stock_quantity=?, sku_suffix=? WHERE id=? AND product_id=?')
+                           ->execute([$vn, $vv, $adjust, $vstock, $suffix ?: null, $vid, $productId]);
+                        $keepIds[] = $vid;
+                    } else {
+                        $db->prepare('INSERT INTO product_variants (product_id, variant_name, variant_value, price_adjustment, stock_quantity, sku_suffix) VALUES (?,?,?,?,?,?)')
+                           ->execute([$productId, $vn, $vv, $adjust, $vstock, $suffix ?: null]);
+                        $keepIds[] = (int) $db->lastInsertId();
+                    }
+                }
+                // Delete removed variants
+                $existing = getProductVariants($productId);
+                foreach ($existing as $ev) {
+                    if (!in_array((int) $ev['id'], $keepIds, true)) {
+                        $db->prepare('DELETE FROM product_variants WHERE id = ?')->execute([(int) $ev['id']]);
+                    }
+                }
+
+                // Images chosen before the product existed are posted with the form
+                // and attached here; already-saved products also use the AJAX manager.
+                // All of them were validated above, so the only thing left that can
+                // fail is storing the file — and that undoes the whole save.
+                $added = 0;
+                if ($pendingImages) {
+                    $dir = __DIR__ . '/../uploads/products/';
+                    if (!is_dir($dir)) { @mkdir($dir, 0755, true); }
+                    $existingCount = count(getProductImages($productId));
+                    foreach ($pendingImages as $pi) {
+                        $fname = unique_filename($pi['ext']);
+                        if (!move_uploaded_file($pi['file']['tmp_name'], $dir . $fname)) {
+                            throw new RuntimeException('The image "' . $pi['file']['name'] . '" could not be stored on the server.');
+                        }
+                        $storedFiles[] = $dir . $fname;
+                        $db->prepare('INSERT INTO product_images (product_id, image_path, is_primary, sort_order) VALUES (?,?,?,?)')
+                           ->execute([$productId, 'uploads/products/' . $fname, ($existingCount + $added) === 0 ? 1 : 0, $existingCount + $added]);
+                        $added++;
+                    }
+                }
+                $db->commit();
+            } catch (Throwable $ex) {
+                $db->rollBack();
+                foreach ($storedFiles as $f) { @unlink($f); }
+                if (!$isEdit) { $productId = 0; }
+                $errors[] = $ex instanceof RuntimeException ? $ex->getMessage() : 'The product could not be saved. Please try again.';
             }
+        }
 
-            $failed = $attempted - $added;
-
-            /* One verdict, not two that argue with each other.
-             *
-             * A save where an image was turned away used to raise the green
-             * "Product created." and a warning about the image side by side, so
-             * the screen said the upload had worked and had not worked at once.
-             * The product genuinely was saved and the admin still has to be told
-             * so — that is said inside the warning instead, next to what went
-             * wrong, and the success toast is kept for the case where nothing
-             * was rejected. The per-file reasons are already queued above. */
+        if (!$errors) {
             $savedWord = $isEdit ? 'Product updated successfully.' : 'Product created successfully.';
+            admin_ok($savedWord . ($added ? " $added image" . ($added === 1 ? '' : 's') . ' uploaded.' : ''));
 
-            if ($failed > 0) {
-                admin_warn($savedWord . ' ' . $failed . ' of ' . $attempted . ' image'
-                    . ($attempted === 1 ? '' : 's') . ' could not be added, so it was saved without '
-                    . ($failed === 1 ? 'it' : 'them') . '. The reason for each one is listed above.'
-                    . ($added ? ' The other ' . $added . ' ' . ($added === 1 ? 'was' : 'were') . ' uploaded.' : ''));
-            } else {
-                admin_ok($savedWord . ($added ? " $added image" . ($added === 1 ? '' : 's') . ' uploaded.' : ''));
-            }
-
-            /* No nag for an empty stock level or a product saved without a
-               picture. Neither is a failure: a product with nothing in stock is
-               an ordinary thing to enter ahead of a delivery, and a product with
-               no image now falls back to the placeholder in both the admin list
-               and the shop, so there is nothing for the admin to repair. A save
-               that went through says so once and stops talking. Images that were
-               offered and REJECTED still warn above — that is a failure, and a
-               different thing from not choosing one. */
             if ($status === 'draft') {
                 admin_info('Saved as a draft, so it stays hidden from the storefront.');
             } elseif ($status === 'inactive') {
                 admin_info('Status is Inactive, so this product is hidden from the storefront.');
             }
 
-            /* Every other admin module returns to its list after a save;
-               the product form was the one exception, which is why editing a
-               product appeared to go nowhere. Two cases still stay on the
-               form on purpose:
-                 - a brand new product, because images and variants can only
-                   be attached once it has an id (the notice above asks for
-                   an image, and the list page is no place to act on that)
-                 - a save where an image was rejected, so the upload can be
-                   retried next to the file picker rather than a page away */
-            if ($isEdit && !$imageProblem) {
-                redirect('products.php');
-            }
-            redirect('product-edit.php?id=' . $productId);
+            /* Back to the list after every successful save, new or edited, the
+               same as every other admin module. A new product used to land on
+               its edit page instead, which read as the save not having finished.
+               A rejected image never gets here — it stops the save above and
+               keeps the admin on the form to fix it. */
+            redirect('products.php');
         }
     }
     // repopulate on error

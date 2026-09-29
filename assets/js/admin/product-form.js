@@ -118,6 +118,20 @@
         zone.addEventListener('drop', function (ev) {
             if (ev.dataTransfer && ev.dataTransfer.files.length) { add(ev.dataTransfer.files); }
         });
+
+        // A product needs at least one image; the server refuses the save
+        // without one, so say it here before the rest of the form is sent.
+        var form = zone.closest('form');
+        if (form) {
+            form.addEventListener('submit', function (ev) {
+                var saved = $$('#imageGrid .imgmgr__item').length;
+                if (queue.length || saved) { return; }
+                ev.preventDefault();
+                if (window.adminToast) { window.adminToast('Add at least one product image before saving.', 'err'); }
+                zone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                zone.focus();
+            });
+        }
     }
 
     /* ----------------------------------------------------- variant rows */
