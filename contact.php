@@ -117,7 +117,7 @@ include 'includes/header.php';
                 </div>
 
                 <div class="pg__map">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3913.3101521785!2d78.86656719999999!3d11.2385795!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bab1b1837af058b%3A0x6ee35965a22dad2e!2sSRI%20ANAND%20JEWELLERS%2C%20NK%20COMPLEX!5e0!3m2!1sen!2sin!4v1788746057908!5m2!1sen!2sin" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3929.088982202426!2d77.4786189!3d10.0095086!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b0714a583192971%3A0xb6ba117df35e04e3!2sSREE%20AKHILA%20JEWELLERY!5e0!3m2!1sen!2sin!4v1790306012446!5m2!1sen!2sin" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
                 </div>
             </div>
         </div>

@@ -49,7 +49,7 @@ function home_cat_art($cat) {
     }
 
     $photos = [
-        'gold'    => 'assets/img/banner/haram.jpg',
+        'gold'    => 'assets/img/banner/haram.png',
         'silver'  => 'assets/img/banner/silver.png',
         'diamond' => 'assets/img/banner/diamond.png',
     ];
@@ -65,7 +65,8 @@ function home_cat_art($cat) {
 function home_tab_panel($id, $items, $active = false) {
     if (empty($items)) return;
     echo '<div class="home__panel" id="' . e($id) . '" role="tabpanel"' . ($active ? '' : ' hidden') . '>';
-    echo '<div class="row row-cols-xl-4 row-cols-lg-4 row-cols-md-3 row-cols-2 mb--n30">';
+    // a snap-scrolling row, not a grid: 6 items in a 4-up grid left a half-empty second row
+    echo '<div class="home__slider">';
     foreach ($items as $product) {
         include __DIR__ . '/includes/product-card.php';
     }
@@ -145,14 +146,16 @@ $tabs = array_filter([
             <div class="home__cats">
                 <?php foreach ($homeCategories as $cat): ?>
                     <?php $count = (int) ($catCounts[(int) $cat['id']] ?? 0); $art = home_cat_art($cat); ?>
-                    <a class="home__cat <?php echo e($art['tone']); ?>" href="category.php?slug=<?php echo e($cat['slug']); ?>">
-                        <?php if ($art['image']): ?>
-                            <img src="<?php echo e($art['image']); ?>" alt="<?php echo e($cat['name']); ?>" loading="lazy">
-                        <?php else: ?>
-                            <span class="home__cat--gem" aria-hidden="true">
-                                <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M20 8h24l12 16-24 32L8 24z"/><path d="M8 24h48M20 8l4 16 8 32 8-32 4-16M24 24h16"/></svg>
-                            </span>
-                        <?php endif; ?>
+                    <a class="home__cat" href="category.php?slug=<?php echo e($cat['slug']); ?>">
+                        <div class="home__cat--media <?php echo e($art['tone']); ?>">
+                            <?php if ($art['image']): ?>
+                                <img src="<?php echo e($art['image']); ?>" alt="<?php echo e($cat['name']); ?>" loading="lazy">
+                            <?php else: ?>
+                                <span class="home__cat--gem" aria-hidden="true">
+                                    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M20 8h24l12 16-24 32L8 24z"/><path d="M8 24h48M20 8l4 16 8 32 8-32 4-16M24 24h16"/></svg>
+                                </span>
+                            <?php endif; ?>
+                        </div>
                         <div class="home__cat--body">
                             <span class="home__cat--count"><?php echo $count > 0 ? $count . ' design' . ($count === 1 ? '' : 's') : 'Coming soon'; ?></span>
                             <h3 class="home__cat--title"><?php echo e($cat['name']); ?></h3>
@@ -205,23 +208,38 @@ $tabs = array_filter([
     <!-- Tabbed product showcase: one section instead of four stacked grids -->
     <?php if ($tabs): ?>
     <section class="home__section" id="homeShowcase">
-        <div class="container-fluid">
-            <div class="section__heading text-center mb-35">
-                <h2 class="section__heading--maintitle style2">Our Collection</h2>
+        <div class="container">
+            <div class="home__show--head">
+                <div>
+                    <span class="home__show--eyebrow">Handpicked for you</span>
+                    <h2 class="home__show--title">Trending Jewellery</h2>
+                </div>
+                <a class="home__show--all" href="products.php">View all jewellery
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </a>
             </div>
-            <div class="home__tabs" role="tablist">
-                <?php $first = true; foreach ($tabs as $key => $tab): ?>
-                    <button type="button" class="home__tab<?php echo $first ? ' is-active' : ''; ?>" role="tab"
-                            aria-selected="<?php echo $first ? 'true' : 'false'; ?>"
-                            aria-controls="panel-<?php echo e($key); ?>" data-home-tab="panel-<?php echo e($key); ?>">
-                        <?php echo e($tab[0]); ?>
+            <div class="home__show--bar">
+                <div class="home__tabs" role="tablist">
+                    <?php $first = true; foreach ($tabs as $key => $tab): ?>
+                        <button type="button" class="home__tab<?php echo $first ? ' is-active' : ''; ?>" role="tab"
+                                aria-selected="<?php echo $first ? 'true' : 'false'; ?>"
+                                aria-controls="panel-<?php echo e($key); ?>" data-home-tab="panel-<?php echo e($key); ?>">
+                            <?php echo e($tab[0]); ?>
+                        </button>
+                    <?php $first = false; endforeach; ?>
+                </div>
+                <div class="home__show--nav">
+                    <button type="button" class="home__show--arrow" data-show-step="-1" aria-label="Previous products">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
                     </button>
-                <?php $first = false; endforeach; ?>
+                    <button type="button" class="home__show--arrow" data-show-step="1" aria-label="Next products">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                    </button>
+                </div>
             </div>
             <?php $first = true; foreach ($tabs as $key => $tab): ?>
                 <?php home_tab_panel('panel-' . $key, $tab[1], $first); $first = false; ?>
             <?php endforeach; ?>
-            <div class="home__more"><a class="btn btn-outline-primary" href="products.php">View All Jewellery</a></div>
         </div>
     </section>
     <?php endif; ?>
@@ -323,7 +341,7 @@ $tabs = array_filter([
     <!-- Closing CTA -->
     <section class="home__section home__section--tight">
         <div class="container">
-            <div class="home__cta" style="--cta-image:url('<?php echo e(asset_url('assets/img/banner/traditional.jpg')); ?>')">
+            <div class="home__cta" style="--cta-image:url('<?php echo e(asset_url('assets/img/banner/traditional.png')); ?>')">
                 <h2 class="home__cta--title">Visit us in store</h2>
                 <p>Book an appointment and our team will have your shortlist ready to try on &mdash; no queue, no rush.</p>
                 <div class="home__cta--actions">
@@ -354,8 +372,34 @@ $tabs = array_filter([
             tab.setAttribute('aria-selected', 'true');
             var panel = document.getElementById(tab.getAttribute('data-home-tab'));
             if (panel) panel.hidden = false;
+            syncArrows();
         });
     });
+
+    /* arrows page the visible panel's slider; disabled at either end */
+    var arrows = document.querySelectorAll('[data-show-step]');
+    function activeSlider() {
+        return document.querySelector('.home__panel:not([hidden]) .home__slider');
+    }
+    function syncArrows() {
+        var s = activeSlider();
+        if (!s) return;
+        var max = s.scrollWidth - s.clientWidth - 2;
+        arrows.forEach(function (a) {
+            a.disabled = a.getAttribute('data-show-step') === '-1' ? s.scrollLeft <= 2 : s.scrollLeft >= max;
+        });
+    }
+    arrows.forEach(function (a) {
+        a.addEventListener('click', function () {
+            var s = activeSlider();
+            if (s) s.scrollBy({ left: s.clientWidth * 0.9 * +a.getAttribute('data-show-step'), behavior: 'smooth' });
+        });
+    });
+    document.querySelectorAll('.home__slider').forEach(function (s) {
+        s.addEventListener('scroll', syncArrows, { passive: true });
+    });
+    window.addEventListener('resize', syncArrows);
+    syncArrows();
 })();
 
 /* Offer-banner countdown: updates [data-ad-expires] targets and hides expired banners. */

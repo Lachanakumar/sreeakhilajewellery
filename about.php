@@ -25,7 +25,7 @@ $values = [
     ],
     [
         'title' => 'Trusted Legacy',
-        'desc'  => 'With over 25 years of experience, we have built a legacy of trust and satisfaction with our customers.',
+        'desc'  => 'A family jewellery tradition that goes back to the early 1900s, built on generations of trust with our customers.',
         'icon'  => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
     ],
 ];
@@ -35,6 +35,42 @@ $steps = [
     ['Source',   'Gold, diamonds and silver are sourced from certified suppliers and assayed on arrival.'],
     ['Craft',    'Our artisans set, solder and finish each piece by hand using traditional techniques.'],
     ['Hallmark', 'Nothing leaves the workshop until it is BIS hallmarked and inspected a final time.'],
+];
+
+// Family history and management team, from the brand's existing site
+// (sreeakhilajewellery.co.in/about-us).
+$history = [
+    [
+        'era'   => 'Early 1900s',
+        'title' => 'The Beginning',
+        'desc'  => 'The story starts with Mr. Bangaru Chettiar, who was not only a farmer but also served as the first municipal chairman of Allinagaram. Besides these responsibilities, he ran a textile business and made traditional Thalli (a type of necklace) and Gundu-mani (a type of beadwork) for weddings &mdash; the family&rsquo;s earliest involvement in both business and craftsmanship.',
+    ],
+    [
+        'era'   => 'The Next Generation',
+        'title' => 'Akhila Jewellery Is Born',
+        'desc'  => 'Mr. Rajagopal Chettiar, the son of Mr. Bangaru Chettiar, carried the family&rsquo;s entrepreneurial spirit forward by starting his own jewellery shop on Madurai Road. This marked the official beginning of Akhila Jewellery, built on the foundation laid by his father.',
+    ],
+];
+
+$team = [
+    [
+        'name'  => 'Mr. Premsai N.T.',
+        'role'  => 'Chief Executive Officer',
+        'photo' => 'assets/img/team/team-img1.jpg',
+        'desc'  => 'The driving force behind the company&rsquo;s strategic direction and overall leadership.',
+    ],
+    [
+        'name'  => 'Mr. Akhilesh Raj',
+        'role'  => 'Partner',
+        'photo' => 'assets/img/team/team-img2.jpg',
+        'desc'  => 'Brings expertise and vision to help steer the company towards success.',
+    ],
+    [
+        'name'  => 'Mrs. Jayanthi Premsai',
+        'role'  => 'Partner',
+        'photo' => 'assets/img/team/team-img3.jpeg',
+        'desc'  => 'Brings expertise and vision to help steer the company towards success.',
+    ],
 ];
 
 include 'includes/header.php';
@@ -48,7 +84,7 @@ include 'includes/header.php';
             <div class="about__hero--inner">
                 <span class="about__hero--eyebrow">About <?php echo e(SITE_NAME); ?></span>
                 <h1 class="about__hero--title">Where tradition meets modern elegance</h1>
-                <p class="about__hero--desc">A quarter-century of craftsmanship, and a simple belief: jewellery should be worth passing on.</p>
+                <p class="about__hero--desc">A family legacy of craftsmanship that began in the early 1900s &mdash; classic collections alongside contemporary styles.</p>
                 <nav class="about__hero--crumbs" aria-label="Breadcrumb">
                     <a href="index.php">Home</a>
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
@@ -58,7 +94,7 @@ include 'includes/header.php';
         </div>
     </section>
 
-    <!-- Story -->
+    <!-- History and background -->
     <section class="about__section">
         <div class="container">
             <div class="about__story">
@@ -66,11 +102,18 @@ include 'includes/header.php';
                     <img src="assets/img/other/aboutus.jpg" alt="<?php echo e(SITE_NAME); ?> showroom" loading="lazy">
                 </div>
                 <div>
-                    <span class="about__story--eyebrow">Our Story</span>
-                    <h2 class="about__story--title">Craftsmanship you can hold,<br>heritage you can wear.</h2>
-                    <p>At <?php echo e(SITE_NAME); ?>, we celebrate the beauty of tradition blended with modern elegance. Our journey is driven by a deep passion for craftsmanship and a commitment to creating jewellery that tells a story.</p>
-                    <p>Each piece we design reflects fine artistry, precision and timeless appeal. From exquisite gold ornaments to intricately crafted bridal collections, we ensure every creation meets the highest standards of quality and authenticity &mdash; using ethically sourced 24K gold, certified diamonds and premium silver.</p>
-                    <p>Our skilled artisans combine traditional techniques with contemporary designs to create pieces that are both unique and enduring. Whether it is a wedding, a celebration or a quiet moment worth marking, we are here to make it special.</p>
+                    <span class="about__story--eyebrow">History and Background</span>
+                    <h2 class="about__story--title">Deeply rooted in tradition<br>and family legacy.</h2>
+                    <ol class="about__history">
+                        <?php foreach ($history as $h): ?>
+                            <li class="about__history--item">
+                                <span class="about__history--era"><?php echo e($h['era']); ?></span>
+                                <h3 class="about__history--title"><?php echo e($h['title']); ?></h3>
+                                <p><?php echo $h['desc']; ?></p>
+                            </li>
+                        <?php endforeach; ?>
+                    </ol>
+                    <p class="about__history--motto"><strong>Tradition Meets Trend</strong> &mdash; classic collections alongside contemporary styles.</p>
                     <a class="btn btn-primary" href="products.php">Browse the Collection</a>
                 </div>
             </div>
@@ -81,7 +124,7 @@ include 'includes/header.php';
     <section class="about__section about__section--ivory">
         <div class="container">
             <div class="about__stats">
-                <div class="about__stat"><strong>25+</strong><span>Years of Trust</span></div>
+                <div class="about__stat"><strong>100+</strong><span>Years of Legacy</span></div>
                 <div class="about__stat"><strong><?php echo (int) $designCount; ?>+</strong><span>Designs</span></div>
                 <div class="about__stat"><strong>100%</strong><span>BIS Hallmarked</span></div>
                 <div class="about__stat"><strong>24K</strong><span>Certified Gold</span></div>
@@ -89,8 +132,32 @@ include 'includes/header.php';
         </div>
     </section>
 
-    <!-- Values -->
+    <!-- Management team -->
     <section class="about__section">
+        <div class="container">
+            <div class="section__heading text-center mb-50">
+                <h2 class="section__heading--maintitle">Our Management Team</h2>
+                <p class="section__heading--desc">The key people responsible for managing Akhila Jewellery.</p>
+            </div>
+            <div class="about__team">
+                <?php foreach ($team as $m): ?>
+                    <article class="about__member">
+                        <div class="about__member--photo">
+                            <img src="<?php echo e($m['photo']); ?>" alt="<?php echo e($m['name']); ?>" loading="lazy">
+                        </div>
+                        <div class="about__member--body">
+                            <h3 class="about__member--name"><?php echo e($m['name']); ?></h3>
+                            <span class="about__member--role"><?php echo e($m['role']); ?></span>
+                            <p><?php echo $m['desc']; ?></p>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+
+    <!-- Values -->
+    <section class="about__section about__section--ivory">
         <div class="container">
             <div class="section__heading text-center mb-50">
                 <h2 class="section__heading--maintitle">Our Core Values</h2>
@@ -111,7 +178,7 @@ include 'includes/header.php';
     </section>
 
     <!-- How a piece is made -->
-    <section class="about__section about__section--ivory">
+    <section class="about__section">
         <div class="container">
             <div class="section__heading text-center mb-50">
                 <h2 class="section__heading--maintitle">How a Piece Is Made</h2>
