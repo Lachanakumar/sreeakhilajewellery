@@ -48,13 +48,9 @@ $payCurrency = pay_currency();
 $payMode     = pay_mode();
 $envWarning  = pay_environment_warning();
 
-$defaultGateway = '';
-foreach ($gateways as $key => $meta) {
-    if ($key !== 'cod') { $defaultGateway = $key; break; }
-}
-if ($defaultGateway === '' && $gateways) {
-    $defaultGateway = array_key_first($gateways);
-}
+// Cash on Delivery is the store's default choice whenever it is switched on;
+// otherwise the first online gateway is pre-selected.
+$defaultGateway = isset($gateways['cod']) ? 'cod' : ($gateways ? array_key_first($gateways) : '');
 
 /* ==================================================================
    No-JavaScript fallback: cash on delivery only. Online gateways all
